@@ -14,10 +14,7 @@ impl Prompt {
     /// Shows prompt and reads command and arguments from stdin.
     pub fn parse_command(&self) -> Result<Command, Box<dyn Error>> {
         print!("carapace> ");
-
-        if let Err(error) = io::stdout().flush() {
-            println!("Could not flush: {}", error);
-        }
+        io::stdout().flush()?;
 
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
