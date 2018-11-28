@@ -4,6 +4,8 @@ use std::env;
 use std::error::Error;
 use std::io::{self, Write};
 
+use term;
+
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt;
 
@@ -14,8 +16,20 @@ impl Prompt {
 
     /// Shows prompt and reads command and arguments from stdin.
     pub fn parse_command(&self) -> Result<Command, Box<dyn Error>> {
-        let cwd = env::current_dir().unwrap_or_default();
-        print!("carapace {}> ", cwd.display());
+        let mut t = term::stdout().unwrap();
+
+        t.fg(term::color::GREEN).unwrap();
+        write!(t, "carapace");
+
+        if let Ok(cwd) = env::current_dir() {
+            t.fg(term::color::BRIGHT_BLUE).unwrap();
+            write!(t, " {}", cwd.display());
+        }
+
+        t.fg(term::color::GREEN).unwrap();
+        write!(t, "> ");
+
+        t.reset().unwrap();
         io::stdout().flush()?;
 
         let mut input = String::new();

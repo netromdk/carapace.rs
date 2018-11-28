@@ -1,6 +1,7 @@
 //! Carapace is a general-purpose shell implementation done purely in Rust.
 
 extern crate dirs;
+extern crate term;
 
 mod command;
 mod prompt;
@@ -43,7 +44,7 @@ pub fn repl() {
                 match output {
                     Ok(output) => print!("{}", String::from_utf8_lossy(&output.stdout)),
                     Err(err) => println!("{}", err),
-                };
+                }
             }
         }
     }
