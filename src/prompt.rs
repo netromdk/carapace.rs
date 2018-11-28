@@ -1,5 +1,6 @@
 use command::Command;
 
+use std::env;
 use std::error::Error;
 use std::io::{self, Write};
 
@@ -13,7 +14,8 @@ impl Prompt {
 
     /// Shows prompt and reads command and arguments from stdin.
     pub fn parse_command(&self) -> Result<Command, Box<dyn Error>> {
-        print!("carapace> ");
+        let cwd = env::current_dir().unwrap_or_default();
+        print!("carapace {}> ", cwd.display());
         io::stdout().flush()?;
 
         let mut input = String::new();
