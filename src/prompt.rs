@@ -14,8 +14,8 @@ impl Prompt {
         Prompt
     }
 
-    /// Shows prompt and reads command and arguments from stdin.
-    pub fn parse_command(&self) -> Result<Command, Box<dyn Error>> {
+    /// Shows prompt.
+    fn show(&self) -> Result<(), Box<dyn Error>> {
         let mut t = term::stdout().unwrap();
 
         t.fg(term::color::GREEN).unwrap();
@@ -31,6 +31,12 @@ impl Prompt {
 
         t.reset().unwrap();
         io::stdout().flush()?;
+        Ok(())
+    }
+
+    /// Shows prompt and reads command and arguments from stdin.
+    pub fn parse_command(&self) -> Result<Command, Box<dyn Error>> {
+        self.show()?;
 
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
