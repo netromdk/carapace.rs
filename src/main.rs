@@ -1,3 +1,5 @@
+extern crate carapace;
+
 fn main() {
-    println!("Hello, world!");
+    carapace::repl();
 }
