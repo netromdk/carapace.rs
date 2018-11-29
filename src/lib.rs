@@ -27,14 +27,17 @@ pub fn repl() {
             "exit" | "quit" => break,
 
             "cd" => {
-                let home_dir = dirs::home_dir().unwrap_or_default();
                 let path = if cmd.args.len() > 0 {
                     Path::new(&cmd.args[0])
                 } else {
-                    home_dir.as_path()
+                    Path::new("~")
                 };
-                if let Err(err) = env::set_current_dir(path) {
-                    println!("Could not change to {}: {}", path.display(), err);
+
+                let home_dir = dirs::home_dir().unwrap_or_default();
+                if path.starts_with("~") {
+                    set_cwd(&home_dir.join(path.strip_prefix("~").unwrap()));
+                } else {
+                    set_cwd(path);
                 }
             }
 
@@ -47,5 +50,11 @@ pub fn repl() {
                 }
             }
         }
+    }
+}
+
+fn set_cwd(dir: &Path) {
+    if let Err(err) = env::set_current_dir(dir) {
+        println!("Could not change to {}: {}", dir.display(), err);
     }
 }
