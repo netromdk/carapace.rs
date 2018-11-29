@@ -3,8 +3,8 @@
 extern crate dirs;
 extern crate term;
 
-mod command;
-mod prompt;
+pub mod command;
+pub mod prompt;
 
 use prompt::Prompt;
 
