@@ -14,14 +14,14 @@ pub fn repl() {
 
     loop {
         let cmd = prompt.parse_command();
-        if let Err(_) = cmd {
+        if let Err(err) = cmd {
+            println!("{}", err);
             continue;
         }
 
         match cmd.unwrap().execute() {
-            Ok(ret) => println!("ret: {}", ret),
-            Err(exit_code) => {
-                println!("exit with {}", exit_code);
+            Ok(_) => continue,
+            Err(_exit_code) => {
                 break;
             }
         }

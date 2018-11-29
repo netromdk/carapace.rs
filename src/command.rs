@@ -4,81 +4,144 @@ use std::fmt;
 use std::path::Path;
 use std::process;
 
-fn set_cwd(dir: &Path) {
-    if let Err(err) = env::set_current_dir(dir) {
-        println!("Could not change to {}: {}", dir.display(), err);
-    }
-}
-
-#[derive(Debug)]
-pub struct Command {
-    pub program: String,
-    pub args: Vec<String>,
-}
-
-impl Command {
-    /// Parses a vector of strings into a `Command` with command program and arguments.
-    pub fn new(values: Vec<&str>) -> Result<Command, Box<dyn Error>> {
-        if values.len() == 0 {
-            return Err(Box::new(NoCommandError));
-        }
-
-        Ok(Command {
-            program: values[0].to_string(),
-            args: values[1..].iter().map(|x| x.to_string()).collect(),
-        })
-    }
-
+/// Base trait of all commands.
+pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
     /// and `Err(exit_code)` on "exit" or "quit".
-    pub fn execute(&self) -> Result<bool, i32> {
-        match self.program.as_ref() {
-            "exit" | "quit" => Err(0),
+    fn execute(&self) -> Result<bool, i32>;
+}
 
-            "cd" => {
-                let path = if self.args.len() > 0 {
-                    Path::new(&self.args[0])
-                } else {
-                    Path::new("~")
-                };
+#[derive(Debug)]
+struct CommandError {
+    error: &'static str,
+}
 
-                let home_dir = dirs::home_dir().unwrap_or_default();
-                if path.starts_with("~") {
-                    set_cwd(&home_dir.join(path.strip_prefix("~").unwrap()));
-                } else {
-                    set_cwd(path);
-                }
+impl CommandError {
+    fn new(error: &'static str) -> CommandError {
+        CommandError { error }
+    }
+}
+
+impl Error for CommandError {}
+
+impl fmt::Display for CommandError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.error)
+    }
+}
+
+/// Exit command provides an exit code on execution, if no argument is provided the code zero is
+/// used.
+pub struct ExitCommand {
+    code: i32,
+}
+
+impl ExitCommand {
+    fn new(args: Vec<String>) -> Result<ExitCommand, Box<dyn Error>> {
+        if args.len() == 0 {
+            return Ok(ExitCommand { code: 0 });
+        }
+        if let Ok(code) = args[0].parse::<i32>() {
+            Ok(ExitCommand { code })
+        } else {
+            return Err(Box::new(CommandError::new("Argument not an integer")));
+        }
+    }
+}
+
+impl Command for ExitCommand {
+    fn execute(&self) -> Result<bool, i32> {
+        Err(self.code)
+    }
+}
+
+/// Quit command provides an exit code of zeroo on execution.
+pub struct QuitCommand;
+
+impl Command for QuitCommand {
+    fn execute(&self) -> Result<bool, i32> {
+        Err(0)
+    }
+}
+
+/// Cd command changes directory to defined path.
+pub struct CdCommand {
+    path: String,
+}
+
+impl CdCommand {
+    /// If no arguments are passed the path will be "~", the home directory, otherwise it will be
+    /// the first argument.
+    fn new(args: Vec<String>) -> CdCommand {
+        let path = if args.len() > 0 {
+            args[0].clone()
+        } else {
+            String::from("~")
+        };
+        CdCommand { path }
+    }
+
+    fn set_cwd(&self, dir: &Path) {
+        if let Err(err) = env::set_current_dir(dir) {
+            println!("Could not change to {}: {}", dir.display(), err);
+        }
+    }
+}
+
+impl Command for CdCommand {
+    fn execute(&self) -> Result<bool, i32> {
+        let home_dir = dirs::home_dir().unwrap_or_default();
+        let path = Path::new(&self.path);
+        if path.starts_with("~") {
+            self.set_cwd(&home_dir.join(path.strip_prefix("~").unwrap()));
+        } else {
+            self.set_cwd(path);
+        }
+
+        Ok(true)
+    }
+}
+
+/// General command that executes program with arguments and waits for it to finish.
+pub struct GeneralCommand {
+    program: String,
+    args: Vec<String>,
+}
+
+impl GeneralCommand {
+    fn new(program: String, args: Vec<String>) -> GeneralCommand {
+        GeneralCommand { program, args }
+    }
+}
+
+impl Command for GeneralCommand {
+    fn execute(&self) -> Result<bool, i32> {
+        let output = process::Command::new(&self.program)
+            .args(&self.args)
+            .output();
+        match output {
+            Ok(output) => {
+                print!("{}", String::from_utf8_lossy(&output.stdout));
                 Ok(true)
             }
-
-            _ => {
-                // Run command with arguments and wait for it to finish.
-                let output = process::Command::new(&self.program)
-                    .args(&self.args)
-                    .output();
-                match output {
-                    Ok(output) => {
-                        print!("{}", String::from_utf8_lossy(&output.stdout));
-                        Ok(true)
-                    }
-                    Err(err) => {
-                        println!("{}", err);
-                        Ok(false)
-                    }
-                }
+            Err(err) => {
+                println!("{}", err);
+                Ok(false)
             }
         }
     }
 }
 
-#[derive(Debug)]
-struct NoCommandError;
-
-impl Error for NoCommandError {}
-
-impl fmt::Display for NoCommandError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "No command inputted.")
+/// Create command instance from `program` and `args`.
+pub fn parse_command(
+    program: String,
+    args: Vec<String>,
+) -> Result<Box<dyn Command>, Box<dyn Error>> {
+    match program.as_ref() {
+        "quit" => Ok(Box::new(QuitCommand {})),
+        "exit" => Ok(Box::new(ExitCommand::new(args)?)),
+        "cd" => Ok(Box::new(CdCommand::new(args))),
+        _ => Ok(Box::new(GeneralCommand::new(program, args))),
     }
 }
 
