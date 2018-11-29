@@ -3,7 +3,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct Command {
-    pub name: String,
+    pub program: String,
     pub args: Vec<String>,
 }
 
@@ -15,7 +15,7 @@ impl Command {
         }
 
         Ok(Command {
-            name: values[0].to_string(),
+            program: values[0].to_string(),
             args: values[1..].iter().map(|x| x.to_string()).collect(),
         })
     }
@@ -45,20 +45,20 @@ mod tests {
     #[test]
     fn parse_command() {
         let cmd = Command::new(vec!["one"]).unwrap();
-        assert_eq!(cmd.name, "one");
+        assert_eq!(cmd.program, "one");
     }
 
     #[test]
     fn parse_command_one_arg() {
         let cmd = Command::new(vec!["one", "two"]).unwrap();
-        assert_eq!(cmd.name, "one");
+        assert_eq!(cmd.program, "one");
         assert_eq!(cmd.args, vec!["two"]);
     }
 
     #[test]
     fn parse_command_two_args() {
         let cmd = Command::new(vec!["one", "two", "three"]).unwrap();
-        assert_eq!(cmd.name, "one");
+        assert_eq!(cmd.program, "one");
         assert_eq!(cmd.args, vec!["two", "three"]);
     }
 }

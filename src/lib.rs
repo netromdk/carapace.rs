@@ -23,7 +23,7 @@ pub fn repl() {
         }
         let cmd = cmd.unwrap();
 
-        match cmd.name.as_ref() {
+        match cmd.program.as_ref() {
             "exit" | "quit" => break,
 
             "cd" => {
@@ -43,7 +43,7 @@ pub fn repl() {
 
             _ => {
                 // Run command with arguments and wait for it to finish.
-                let output = process::Command::new(cmd.name).args(cmd.args).output();
+                let output = process::Command::new(cmd.program).args(cmd.args).output();
                 match output {
                     Ok(output) => print!("{}", String::from_utf8_lossy(&output.stdout)),
                     Err(err) => println!("{}", err),
