@@ -17,6 +17,9 @@ use self::cd_command::CdCommand;
 pub mod general_command;
 use self::general_command::GeneralCommand;
 
+pub mod history_command;
+use self::history_command::HistoryCommand;
+
 /// Base trait of all commands.
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
@@ -56,6 +59,7 @@ pub fn parse_command(
         "quit" => Ok(Box::new(QuitCommand {})),
         "exit" => Ok(Box::new(ExitCommand::new(args)?)),
         "cd" => Ok(Box::new(CdCommand::new(args))),
+        "history" | "hist" | "h" => Ok(Box::new(HistoryCommand {})),
         _ => Ok(Box::new(GeneralCommand::new(program, args))),
     }
 }
@@ -85,6 +89,27 @@ mod tests {
         let cmd = cmd.as_any().downcast_ref::<CdCommand>();
         assert!(cmd.is_some());
         assert_eq!(cmd.unwrap().path, "~");
+    }
+
+    #[test]
+    fn parse_command_history() {
+        let cmd = parse_command(String::from("history"), vec![]).unwrap();
+        let cmd = cmd.as_any().downcast_ref::<HistoryCommand>();
+        assert!(cmd.is_some());
+    }
+
+    #[test]
+    fn parse_command_history_hist() {
+        let cmd = parse_command(String::from("hist"), vec![]).unwrap();
+        let cmd = cmd.as_any().downcast_ref::<HistoryCommand>();
+        assert!(cmd.is_some());
+    }
+
+    #[test]
+    fn parse_command_history_h() {
+        let cmd = parse_command(String::from("h"), vec![]).unwrap();
+        let cmd = cmd.as_any().downcast_ref::<HistoryCommand>();
+        assert!(cmd.is_some());
     }
 
     #[test]
