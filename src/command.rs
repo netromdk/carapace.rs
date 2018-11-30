@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::env;
 use std::error::Error;
 use std::fmt;
@@ -9,6 +10,10 @@ pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
     /// and `Err(exit_code)` on "exit" or "quit".
     fn execute(&self) -> Result<bool, i32>;
+
+    /// Enable downcasting from trait object, like `dyn Command`, to concrete type, like
+    /// `ExitCommand`.
+    fn as_any(&self) -> &dyn Any;
 }
 
 #[derive(Debug)]
@@ -53,6 +58,10 @@ impl Command for ExitCommand {
     fn execute(&self) -> Result<bool, i32> {
         Err(self.code)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 /// Quit command provides an exit code of zeroo on execution.
@@ -61,6 +70,10 @@ pub struct QuitCommand;
 impl Command for QuitCommand {
     fn execute(&self) -> Result<bool, i32> {
         Err(0)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -100,6 +113,10 @@ impl Command for CdCommand {
 
         Ok(true)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 /// General command that executes program with arguments and waits for it to finish.
@@ -129,6 +146,10 @@ impl Command for GeneralCommand {
                 Ok(false)
             }
         }
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
