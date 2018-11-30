@@ -3,6 +3,8 @@ use std::error::Error;
 use std::fmt;
 use std::process;
 
+use super::Prompt;
+
 pub mod exit_command;
 use self::exit_command::ExitCommand;
 
@@ -19,7 +21,7 @@ use self::general_command::GeneralCommand;
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
     /// and `Err(exit_code)` on "exit" or "quit".
-    fn execute(&self) -> Result<bool, i32>;
+    fn execute(&self, prompt: &Prompt) -> Result<bool, i32>;
 
     /// Enable downcasting from trait object, like `dyn Command`, to concrete type, like
     /// `ExitCommand`.

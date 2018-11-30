@@ -31,7 +31,7 @@ pub fn repl() {
                 continue;
             }
 
-            match cmd.unwrap().execute() {
+            match cmd.unwrap().execute(&prompt) {
                 Ok(_) => continue,
                 Err(code) => {
                     exit_code = code;

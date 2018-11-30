@@ -20,7 +20,7 @@ impl ExitCommand {
 }
 
 impl Command for ExitCommand {
-    fn execute(&self) -> Result<bool, i32> {
+    fn execute(&self, _prompt: &Prompt) -> Result<bool, i32> {
         Err(self.code)
     }
 
@@ -49,13 +49,5 @@ mod tests {
     fn valid_arg() {
         let cmd = ExitCommand::new(vec![String::from("42")]).unwrap();
         assert_eq!(cmd.code, 42);
-    }
-
-    #[test]
-    fn execute_returns_code() {
-        let cmd = ExitCommand::new(vec![String::from("42")]).unwrap();
-        let res = cmd.execute();
-        assert!(res.is_err());
-        assert_eq!(res.err().unwrap(), 42);
     }
 }

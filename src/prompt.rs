@@ -11,7 +11,7 @@ use term;
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt {
     /// History of inputs.
-    history: Vec<String>,
+    pub history: Vec<String>,
 
     /// Maximum of newest entries to keep in history.
     history_max: usize,

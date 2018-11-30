@@ -28,7 +28,7 @@ impl CdCommand {
 }
 
 impl Command for CdCommand {
-    fn execute(&self) -> Result<bool, i32> {
+    fn execute(&self, _prompt: &Prompt) -> Result<bool, i32> {
         let home_dir = dirs::home_dir().unwrap_or_default();
         let path = Path::new(&self.path);
         if path.starts_with("~") {
