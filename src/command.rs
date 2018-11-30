@@ -171,28 +171,94 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_no_command() {
-        let cmd = Command::new(vec![]);
+    fn exit_cmd_no_args_is_zero() {
+        let cmd = ExitCommand::new(vec![]).unwrap();
+        assert_eq!(cmd.code, 0);
+    }
+
+    #[test]
+    fn exit_cmd_invalid_arg() {
+        let cmd = ExitCommand::new(vec![String::from("abc")]);
         assert!(cmd.is_err());
     }
 
     #[test]
-    fn parse_command() {
-        let cmd = Command::new(vec!["one"]).unwrap();
-        assert_eq!(cmd.program, "one");
+    fn exit_cmd_valid_arg() {
+        let cmd = ExitCommand::new(vec![String::from("42")]).unwrap();
+        assert_eq!(cmd.code, 42);
     }
 
     #[test]
-    fn parse_command_one_arg() {
-        let cmd = Command::new(vec!["one", "two"]).unwrap();
-        assert_eq!(cmd.program, "one");
-        assert_eq!(cmd.args, vec!["two"]);
+    fn exit_cmd_execute_returns_code() {
+        let cmd = ExitCommand::new(vec![String::from("42")]).unwrap();
+        let res = cmd.execute();
+        assert!(res.is_err());
+        assert_eq!(res.err().unwrap(), 42);
     }
 
     #[test]
-    fn parse_command_two_args() {
-        let cmd = Command::new(vec!["one", "two", "three"]).unwrap();
-        assert_eq!(cmd.program, "one");
-        assert_eq!(cmd.args, vec!["two", "three"]);
+    fn quit_cmd_execute_returns_zero() {
+        let cmd = QuitCommand {};
+        let res = cmd.execute();
+        assert!(res.is_err());
+        assert_eq!(res.err().unwrap(), 0);
+    }
+
+    #[test]
+    fn cd_cmd_no_args_is_tilde() {
+        let cmd = CdCommand::new(vec![]);
+        assert_eq!(cmd.path, "~");
+    }
+
+    #[test]
+    fn cd_cmd_valid_arg() {
+        let cmd = CdCommand::new(vec![String::from("/tmp")]);
+        assert_eq!(cmd.path, "/tmp");
+    }
+
+    #[test]
+    fn general_cmd_new() {
+        let prog = String::from("prog");
+        let args = vec![String::from("arg")];
+        let cmd = GeneralCommand::new(prog.clone(), args.clone());
+        assert_eq!(cmd.program, prog);
+        assert_eq!(cmd.args, args);
+    }
+
+    #[test]
+    fn parse_command_quit() {
+        let cmd = parse_command(String::from("quit"), vec![]).unwrap();
+        let cmd = cmd.as_any().downcast_ref::<QuitCommand>();
+        assert!(cmd.is_some());
+    }
+
+    #[test]
+    fn parse_command_exit() {
+        let cmd = parse_command(String::from("exit"), vec![]).unwrap();
+        let cmd = cmd.as_any().downcast_ref::<ExitCommand>();
+        assert!(cmd.is_some());
+        assert_eq!(cmd.unwrap().code, 0);
+    }
+
+    #[test]
+    fn parse_command_cd() {
+        let cmd = parse_command(String::from("cd"), vec![]).unwrap();
+        let cmd = cmd.as_any().downcast_ref::<CdCommand>();
+        assert!(cmd.is_some());
+        assert_eq!(cmd.unwrap().path, "~");
+    }
+
+    #[test]
+    fn parse_command_general() {
+        let prog = String::from("ls");
+        let args = vec![String::from("-lh"), String::from("~/git")];
+        let cmd = parse_command(prog.clone(), args.clone()).unwrap();
+
+        let cmd = cmd.as_any().downcast_ref::<GeneralCommand>();
+        assert!(cmd.is_some());
+
+        let cmd = cmd.unwrap();
+        assert_eq!(cmd.program, prog);
+        assert_eq!(cmd.args, args);
     }
 }
