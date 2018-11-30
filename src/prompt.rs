@@ -43,15 +43,13 @@ impl Prompt {
         match io::stdin().read_line(&mut input) {
             Ok(_) => {
                 let values: Vec<&str> = input.trim().split_whitespace().collect();
-
                 if values.len() == 0 {
                     return Err(Box::new(NoCommandError));
                 }
 
-                command::parse_command(
-                    values[0].to_string(),
-                    values[1..].iter().map(|x| x.to_string()).collect(),
-                )
+                let program = values[0].to_string();
+                let args = values[1..].iter().map(|x| x.to_string()).collect();
+                command::parse_command(program, args)
             }
             Err(error) => {
                 println!("Error: {}", error);
