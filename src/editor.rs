@@ -95,3 +95,71 @@ impl Hinter for EditorHelper {
 
 impl Highlighter for EditorHelper {}
 impl Helper for EditorHelper {}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn builtin_complete_no_input_all_candidates() {
+        let (pos, pairs) = builtin_command_completer("", 0).unwrap();
+        assert_eq!(pos, 0);
+        assert_eq!(pairs.len(), 6);
+    }
+
+    #[test]
+    fn builtin_complete_quit_cmd() {
+        let (pos, pairs) = builtin_command_completer("q", 1).unwrap();
+        assert_eq!(pos, 1);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "quit");
+        assert_eq!(&pairs[0].replacement, "uit");
+    }
+
+    #[test]
+    fn builtin_complete_exit_cmd() {
+        let (pos, pairs) = builtin_command_completer("ex", 2).unwrap();
+        assert_eq!(pos, 2);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "exit");
+        assert_eq!(&pairs[0].replacement, "it");
+    }
+
+    #[test]
+    fn builtin_complete_history_cmd_h() {
+        let (pos, pairs) = builtin_command_completer("h", 1).unwrap();
+        assert_eq!(pos, 1);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "h");
+        assert_eq!(&pairs[0].replacement, "");
+    }
+
+    #[test]
+    fn builtin_complete_history_cmd_hist() {
+        let (pos, pairs) = builtin_command_completer("hi", 2).unwrap();
+        assert_eq!(pos, 2);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "hist");
+        assert_eq!(&pairs[0].replacement, "st");
+    }
+
+    #[test]
+    fn builtin_complete_history_cmd() {
+        let (pos, pairs) = builtin_command_completer("histo", 5).unwrap();
+        assert_eq!(pos, 5);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "history");
+        assert_eq!(&pairs[0].replacement, "ry");
+    }
+
+    #[test]
+    fn builtin_complete_nothing_after_first_whitespace() {
+        let (pos, pairs) = builtin_command_completer("ls ", 3).unwrap();
+        assert_eq!(pos, 3);
+        assert_eq!(pairs.len(), 0);
+
+        let (pos, pairs) = builtin_command_completer("ls -lg /", 8).unwrap();
+        assert_eq!(pos, 8);
+        assert_eq!(pairs.len(), 0);
+    }
+}
