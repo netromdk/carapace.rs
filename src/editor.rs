@@ -32,10 +32,57 @@ impl EditorHelper {
     }
 }
 
+fn builtin_command_completer(line: &str, pos: usize) -> Result<(usize, Vec<Pair>), ReadlineError> {
+    let builtins = vec!["cd", "quit", "exit", "h", "hist", "history"];
+
+    // Show all candidates with no input and pos=0.
+    if pos == 0 {
+        let mut candidates = Vec::new();
+        for builtin in &builtins {
+            candidates.push(Pair {
+                display: builtin.to_string(),
+                replacement: builtin.to_string(),
+            });
+        }
+        return Ok((pos, candidates));
+    }
+    // Check for partial matches and their remainders.
+    else {
+        let slice = &line[..pos];
+        for builtin in &builtins {
+            if *builtin == slice || builtin.starts_with(slice) {
+                let cmd = builtin.to_string();
+                return Ok((
+                    pos,
+                    vec![Pair {
+                        display: cmd.clone(),
+
+                        // The missing part of the candidate.
+                        replacement: cmd[slice.len()..].to_string(),
+                    }],
+                ));
+            }
+        }
+    }
+
+    // No matches.
+    return Ok((pos, vec![]));
+}
+
 impl Completer for EditorHelper {
     type Candidate = Pair;
 
     fn complete(&self, line: &str, pos: usize) -> Result<(usize, Vec<Pair>), ReadlineError> {
+        // Do built-in command completion if position is within first word.
+        if let Some(wpos) = line.find(char::is_whitespace) {
+            if pos < wpos {
+                return builtin_command_completer(line, pos);
+            }
+        } else {
+            return builtin_command_completer(line, pos);
+        }
+
+        // Otherwise, default to file completion.
         self.file_comp.complete(line, pos)
     }
 }
