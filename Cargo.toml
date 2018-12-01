@@ -6,3 +6,4 @@ authors = ["Morten Kristensen <msk@nullpointer.dk>"]
 [dependencies]
 dirs = "1.0.4"
 term = "0.5.1"
+rustyline = "2.1.0"

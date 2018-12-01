@@ -3,25 +3,23 @@ use command::{self, Command};
 use std::env;
 use std::error::Error;
 use std::fmt;
-use std::fs;
 use std::io::{self, Write};
 
 use term;
 
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
+
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt {
-    /// History of inputs.
-    pub history: Vec<String>,
-
-    /// Maximum of newest entries to keep in history.
-    history_max: usize,
+    /// Readline interface.
+    pub editor: Editor<()>,
 }
 
 impl Prompt {
     pub fn new() -> Prompt {
         let mut p = Prompt {
-            history: vec![],
-            history_max: 1000,
+            editor: Editor::<()>::new(),
         };
         p.load_history();
         p
@@ -29,22 +27,21 @@ impl Prompt {
 
     /// Shows prompt and reads command and arguments from stdin.
     pub fn parse_command(&mut self) -> Result<Box<dyn Command>, Box<dyn Error>> {
-        self.show()?;
+        let mut prompt_txt = String::from("[carapace] ");
+        if let Ok(cwd) = env::current_dir() {
+            prompt_txt = format!("{} {}", prompt_txt, cwd.display());
+        }
+        prompt_txt += " % ";
 
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(_) => {
-                // Catch ^D/EOF.
-                if input.len() == 0 {
-                    return Err(Box::new(EofError));
-                }
+        let input = self.editor.readline(prompt_txt.as_ref());
+        match input {
+            Ok(line) => {
+                self.editor.add_history_entry(line.as_ref());
 
-                let input = input.trim();
+                let input = line.trim();
                 if input.len() == 0 {
                     return Err(Box::new(NoCommandError));
                 }
-
-                self.push_to_history(input.to_string());
 
                 // Split on whitespace, convert to String parts, and replace all ~ with home dir
                 // (for parts starting with it only).
@@ -70,9 +67,15 @@ impl Prompt {
                 let args = values.drain(1..).collect();
                 command::parse_command(program, args)
             }
-            Err(error) => {
-                println!("Error: {}", error);
-                Err(Box::new(error))
+            Err(ReadlineError::Interrupted) => {
+                // TODO: Unhandled for now!
+                println!("^C");
+                Err(Box::new(NoCommandError))
+            }
+            Err(ReadlineError::Eof) => Err(Box::new(EofError)),
+            Err(err) => {
+                println!("Error: {:?}", err);
+                Err(Box::new(err))
             }
         }
     }
@@ -97,30 +100,17 @@ impl Prompt {
         Ok(())
     }
 
-    fn push_to_history(&mut self, input: String) {
-        self.history.push(input);
-        if self.history.len() > self.history_max {
-            self.history.remove(0);
-        }
-    }
-
     fn load_history(&mut self) {
         let path = dirs::home_dir().unwrap().join(".carapace").join("history");
-        match fs::read(&path) {
-            Ok(contents) => {
-                self.history = String::from_utf8_lossy(&contents)
-                    .split('\n')
-                    .map(|x| x.to_string())
-                    .collect();
-            }
-            Err(err) => println!("Could not load history from: {}\n{}", path.display(), err),
+        if let Err(_) = self.editor.load_history(&path) {
+            println!("No history loaded.");
         }
     }
 
     fn save_history(&self) {
         let path = dirs::home_dir().unwrap().join(".carapace").join("history");
-        if let Err(err) = fs::write(&path, self.history.join("\n")) {
-            println!("Could not write history to: {}\n{}", path.display(), err);
+        if let Err(err) = self.editor.save_history(&path) {
+            println!("Could not save history to: {}\n{}", path.display(), err);
         }
     }
 }

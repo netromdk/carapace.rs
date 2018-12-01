@@ -1,6 +1,7 @@
 //! Carapace is a general-purpose shell implementation done purely in Rust.
 
 extern crate dirs;
+extern crate rustyline;
 extern crate term;
 
 pub mod command;
