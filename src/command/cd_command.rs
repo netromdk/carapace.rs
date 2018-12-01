@@ -10,7 +10,8 @@ pub struct CdCommand {
 
 impl CdCommand {
     /// If no arguments are passed the path will be "~", the home directory, otherwise it will be
-    /// the first argument.
+    /// the first argument. *Note:* it is expected that all "~" have already been replaced. Only the
+    /// placeholder "~" used with no arguments is kept to replace directly in `execute()`.
     pub fn new(args: Vec<String>) -> CdCommand {
         let path = if args.len() > 0 {
             args[0].clone()
@@ -29,14 +30,13 @@ impl CdCommand {
 
 impl Command for CdCommand {
     fn execute(&self, _prompt: &Prompt) -> Result<bool, i32> {
-        let home_dir = dirs::home_dir().unwrap_or_default();
-        let path = Path::new(&self.path);
-        if path.starts_with("~") {
-            self.set_cwd(&home_dir.join(path.strip_prefix("~").unwrap()));
+        if self.path == "~" {
+            let home_dir = dirs::home_dir().unwrap_or_default();
+            self.set_cwd(&home_dir);
         } else {
-            self.set_cwd(path);
+            let path = Path::new(&self.path);
+            self.set_cwd(&path);
         }
-
         Ok(true)
     }
 

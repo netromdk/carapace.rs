@@ -40,15 +40,34 @@ impl Prompt {
                 }
 
                 let input = input.trim();
-                let values: Vec<&str> = input.split_whitespace().collect();
-                if values.len() == 0 {
+                if input.len() == 0 {
                     return Err(Box::new(NoCommandError));
                 }
 
                 self.push_to_history(input.to_string());
 
-                let program = values[0].to_string();
-                let args = values[1..].iter().map(|x| x.to_string()).collect();
+                // Split on whitespace, convert to String parts, and replace all ~ with home dir
+                // (for parts starting with it only).
+                let home_dir = dirs::home_dir().unwrap_or_default();
+                let mut values: Vec<String> = input
+                    .split_whitespace()
+                    .map(|x| {
+                        let mut s = x.to_string();
+                        if !s.starts_with("~") {
+                            s
+                        } else {
+                            let cnt = if s.starts_with("~/") { 2 } else { 1 };
+                            let rest: String = s.drain(cnt..).collect();
+                            if let Ok(res) = home_dir.join(&rest).into_os_string().into_string() {
+                                res
+                            } else {
+                                s
+                            }
+                        }
+                    }).collect();
+
+                let program = values[0].clone();
+                let args = values.drain(1..).collect();
                 command::parse_command(program, args)
             }
             Err(error) => {
