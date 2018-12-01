@@ -27,7 +27,7 @@ pub fn repl() {
         loop {
             let cmd = prompt.parse_command();
             if let Err(err) = cmd {
-                println!("{}", err);
+                print!("{}", err);
                 continue;
             }
 

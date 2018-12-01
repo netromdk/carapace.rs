@@ -34,6 +34,11 @@ impl Prompt {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_) => {
+                // Catch ^D/EOF.
+                if input.len() == 0 {
+                    return Err(Box::new(EofError));
+                }
+
                 let input = input.trim();
                 let values: Vec<&str> = input.split_whitespace().collect();
                 if values.len() == 0 {
@@ -108,12 +113,24 @@ impl Drop for Prompt {
 }
 
 #[derive(Debug)]
+struct EofError;
+
+impl Error for EofError {}
+
+impl fmt::Display for EofError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Write newline on ^D/EOF so next prompt doesn't appear on same line.
+        writeln!(f, "")
+    }
+}
+
+#[derive(Debug)]
 struct NoCommandError;
 
 impl Error for NoCommandError {}
 
 impl fmt::Display for NoCommandError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "No command inputted.")
+        write!(f, "")
     }
 }
