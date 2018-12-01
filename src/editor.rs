@@ -34,17 +34,16 @@ impl EditorHelper {
 
 fn builtin_command_completer(line: &str, pos: usize) -> Result<(usize, Vec<Pair>), ReadlineError> {
     let builtins = vec!["cd", "quit", "exit", "h", "hist", "history"];
+    let mut candidates = Vec::new();
 
     // Show all candidates with no input and pos=0.
     if pos == 0 {
-        let mut candidates = Vec::new();
         for builtin in &builtins {
             candidates.push(Pair {
                 display: builtin.to_string(),
                 replacement: builtin.to_string(),
             });
         }
-        return Ok((pos, candidates));
     }
     // Check for partial matches and their remainders.
     else {
@@ -52,21 +51,17 @@ fn builtin_command_completer(line: &str, pos: usize) -> Result<(usize, Vec<Pair>
         for builtin in &builtins {
             if *builtin == slice || builtin.starts_with(slice) {
                 let cmd = builtin.to_string();
-                return Ok((
-                    pos,
-                    vec![Pair {
-                        display: cmd.clone(),
+                candidates.push(Pair {
+                    display: cmd.clone(),
 
-                        // The missing part of the candidate.
-                        replacement: cmd[slice.len()..].to_string(),
-                    }],
-                ));
+                    // The missing part of the candidate.
+                    replacement: cmd[slice.len()..].to_string(),
+                });
             }
         }
     }
 
-    // No matches.
-    return Ok((pos, vec![]));
+    return Ok((pos, candidates));
 }
 
 impl Completer for EditorHelper {
@@ -97,7 +92,7 @@ impl Highlighter for EditorHelper {}
 impl Helper for EditorHelper {}
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]
@@ -129,18 +124,24 @@ mod test {
     fn builtin_complete_history_cmd_h() {
         let (pos, pairs) = builtin_command_completer("h", 1).unwrap();
         assert_eq!(pos, 1);
-        assert_eq!(pairs.len(), 1);
+        assert_eq!(pairs.len(), 3);
         assert_eq!(&pairs[0].display, "h");
         assert_eq!(&pairs[0].replacement, "");
+        assert_eq!(&pairs[1].display, "hist");
+        assert_eq!(&pairs[1].replacement, "ist");
+        assert_eq!(&pairs[2].display, "history");
+        assert_eq!(&pairs[2].replacement, "istory");
     }
 
     #[test]
     fn builtin_complete_history_cmd_hist() {
         let (pos, pairs) = builtin_command_completer("hi", 2).unwrap();
         assert_eq!(pos, 2);
-        assert_eq!(pairs.len(), 1);
+        assert_eq!(pairs.len(), 2);
         assert_eq!(&pairs[0].display, "hist");
         assert_eq!(&pairs[0].replacement, "st");
+        assert_eq!(&pairs[1].display, "history");
+        assert_eq!(&pairs[1].replacement, "story");
     }
 
     #[test]
