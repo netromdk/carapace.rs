@@ -19,12 +19,21 @@ impl Command for GeneralCommand {
             .output();
         match output {
             Ok(output) => {
-                let mut txt = String::from_utf8_lossy(&output.stdout);
-                if !txt.ends_with("\n") {
-                    txt += "\n";
+                let mut success = true;
+                let mut resp = String::from_utf8_lossy(&output.stdout);
+
+                if !output.status.success() {
+                    success = false;
+                    if resp.len() == 0 {
+                        resp = String::from_utf8_lossy(&output.stderr);
+                    }
                 }
-                print!("{}", txt);
-                Ok(true)
+
+                if !resp.ends_with("\n") {
+                    resp += "\n";
+                }
+                print!("{}", resp);
+                Ok(success)
             }
             Err(err) => {
                 println!("{}", err);
