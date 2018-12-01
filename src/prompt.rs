@@ -10,6 +10,9 @@ use term::{self, Terminal};
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
+/// Fallback textual prompt if term formatting fails.
+const SAFE_PROMPT: &str = "carapace % ";
+
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt {
     /// Readline interface.
@@ -78,32 +81,54 @@ impl Prompt {
 
     /// Yields the textual prompt with term colors.
     fn prompt(&self) -> String {
+        // In case of failure, use safe prompt. It is a closure so it is only allocated if it is
+        // needed.
+        let safe_prompt = || SAFE_PROMPT.to_string();
+
         // In-memory cursor using a vector for data.
         let cursor = Cursor::new(Vec::new());
-        let mut t = term::TerminfoTerminal::new(cursor).unwrap();
+
+        let t = term::TerminfoTerminal::new(cursor);
+        if t.is_none() {
+            return safe_prompt();
+        }
+        let mut t = t.unwrap();
 
         // Create textual prompt.
-        t.fg(term::color::GREEN).unwrap();
+        if t.fg(term::color::GREEN).is_err() {
+            return safe_prompt();
+        }
         write!(t, "carapace");
 
         if let Ok(cwd) = env::current_dir() {
-            t.fg(term::color::BRIGHT_BLUE).unwrap();
+            if t.fg(term::color::BRIGHT_BLUE).is_err() {
+                return safe_prompt();
+            }
             write!(t, " {}", cwd.display());
         }
 
-        t.fg(term::color::GREEN).unwrap();
-        write!(t, "> ");
+        if t.fg(term::color::GREEN).is_err() {
+            return safe_prompt();
+        }
+        write!(t, " % ");
 
         // NOTE: Resetting yields extra space at end with is annoying, so hardcoding to white color
         // at end.
         // t.reset().unwrap();
-        t.fg(term::color::WHITE).unwrap();
+        if t.fg(term::color::WHITE).is_err() {
+            return safe_prompt();
+        }
 
         // Get inner cursor (it was moved above) and read what was written to its data vector.
         let mut inner_cursor = t.into_inner();
-        inner_cursor.seek(SeekFrom::Start(0)).unwrap();
+        if inner_cursor.seek(SeekFrom::Start(0)).is_err() {
+            return safe_prompt();
+        }
+
         let mut out = Vec::new();
-        inner_cursor.read_to_end(&mut out).unwrap();
+        if inner_cursor.read_to_end(&mut out).is_err() {
+            return safe_prompt();
+        }
 
         String::from_utf8_lossy(&out).into_owned()
     }
