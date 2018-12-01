@@ -5,6 +5,7 @@ extern crate rustyline;
 extern crate term;
 
 pub mod command;
+pub mod editor;
 pub mod prompt;
 
 use prompt::Prompt;

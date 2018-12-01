@@ -1,4 +1,5 @@
 use command::{self, Command};
+use editor::{create_editor, EditorHelper};
 
 use std::env;
 use std::error::Error;
@@ -16,13 +17,13 @@ const SAFE_PROMPT: &str = "carapace % ";
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt {
     /// Readline interface.
-    pub editor: Editor<()>,
+    pub editor: Editor<EditorHelper>,
 }
 
 impl Prompt {
     pub fn new() -> Prompt {
         let mut p = Prompt {
-            editor: Editor::<()>::new(),
+            editor: create_editor(),
         };
         p.load_history();
         p
