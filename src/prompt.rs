@@ -3,9 +3,9 @@ use command::{self, Command};
 use std::env;
 use std::error::Error;
 use std::fmt;
-use std::io::{self, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use term;
+use term::{self, Terminal};
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
@@ -27,11 +27,7 @@ impl Prompt {
 
     /// Shows prompt and reads command and arguments from stdin.
     pub fn parse_command(&mut self) -> Result<Box<dyn Command>, Box<dyn Error>> {
-        let mut prompt_txt = String::from("[carapace] ");
-        if let Ok(cwd) = env::current_dir() {
-            prompt_txt = format!("{} {}", prompt_txt, cwd.display());
-        }
-        prompt_txt += " % ";
+        let prompt_txt = self.prompt();
 
         let input = self.editor.readline(prompt_txt.as_ref());
         match input {
@@ -80,10 +76,13 @@ impl Prompt {
         }
     }
 
-    /// Shows prompt.
-    fn show(&self) -> Result<(), Box<dyn Error>> {
-        let mut t = term::stdout().unwrap();
+    /// Yields the textual prompt with term colors.
+    fn prompt(&self) -> String {
+        // In-memory cursor using a vector for data.
+        let cursor = Cursor::new(Vec::new());
+        let mut t = term::TerminfoTerminal::new(cursor).unwrap();
 
+        // Create textual prompt.
         t.fg(term::color::GREEN).unwrap();
         write!(t, "carapace");
 
@@ -95,9 +94,18 @@ impl Prompt {
         t.fg(term::color::GREEN).unwrap();
         write!(t, "> ");
 
-        t.reset().unwrap();
-        io::stdout().flush()?;
-        Ok(())
+        // NOTE: Resetting yields extra space at end with is annoying, so hardcoding to white color
+        // at end.
+        // t.reset().unwrap();
+        t.fg(term::color::WHITE).unwrap();
+
+        // Get inner cursor (it was moved above) and read what was written to its data vector.
+        let mut inner_cursor = t.into_inner();
+        inner_cursor.seek(SeekFrom::Start(0)).unwrap();
+        let mut out = Vec::new();
+        inner_cursor.read_to_end(&mut out).unwrap();
+
+        String::from_utf8_lossy(&out).into_owned()
     }
 
     fn load_history(&mut self) {
