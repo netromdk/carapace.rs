@@ -42,7 +42,9 @@ impl<'c> EditorHelper<'c> {
         line: &str,
         pos: usize,
     ) -> Result<(usize, Vec<Pair>), ReadlineError> {
-        let mut builtins = vec!["cd", "quit", "exit", "h", "hist", "history", "unset"];
+        let mut builtins = vec![
+            "cd", "exit", "export", "h", "hist", "history", "quit", "unset",
+        ];
 
         // Add aliases, if any.
         for (k, _) in &self.config.aliases {
@@ -127,7 +129,7 @@ mod tests {
             .builtin_command_completer("", 0)
             .unwrap();
         assert_eq!(pos, 0);
-        assert_eq!(pairs.len(), 6);
+        assert_eq!(pairs.len(), 8);
     }
 
     #[test]
@@ -150,12 +152,12 @@ mod tests {
         let (pos, pairs) = editor
             .helper()
             .unwrap()
-            .builtin_command_completer("ex", 2)
+            .builtin_command_completer("exi", 3)
             .unwrap();
-        assert_eq!(pos, 2);
+        assert_eq!(pos, 3);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "exit");
-        assert_eq!(&pairs[0].replacement, "it");
+        assert_eq!(&pairs[0].replacement, "t");
     }
 
     #[test]
@@ -204,6 +206,34 @@ mod tests {
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "history");
         assert_eq!(&pairs[0].replacement, "ry");
+    }
+
+    #[test]
+    fn builtin_complete_unset_cmd() {
+        create_test_editor!(editor);
+        let (pos, pairs) = editor
+            .helper()
+            .unwrap()
+            .builtin_command_completer("un", 2)
+            .unwrap();
+        assert_eq!(pos, 2);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "unset");
+        assert_eq!(&pairs[0].replacement, "set");
+    }
+
+    #[test]
+    fn builtin_complete_export_cmd() {
+        create_test_editor!(editor);
+        let (pos, pairs) = editor
+            .helper()
+            .unwrap()
+            .builtin_command_completer("exp", 3)
+            .unwrap();
+        assert_eq!(pos, 3);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "export");
+        assert_eq!(&pairs[0].replacement, "ort");
     }
 
     #[test]

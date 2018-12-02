@@ -23,6 +23,9 @@ use self::history_command::HistoryCommand;
 pub mod unset_command;
 use self::unset_command::UnsetCommand;
 
+pub mod export_command;
+use self::export_command::ExportCommand;
+
 /// Base trait of all commands.
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
@@ -64,6 +67,7 @@ pub fn parse_command(
         "cd" => Ok(Box::new(CdCommand::new(args))),
         "history" | "hist" | "h" => Ok(Box::new(HistoryCommand {})),
         "unset" => Ok(Box::new(UnsetCommand::new(args)?)),
+        "export" => Ok(Box::new(ExportCommand::new(args))),
         _ => Ok(Box::new(GeneralCommand::new(program, args))),
     }
 }
