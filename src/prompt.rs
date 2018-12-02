@@ -1,6 +1,6 @@
 use command::{self, Command};
 use config::Config;
-use editor::{create_editor, EditorHelper};
+use editor::{self, EditorHelper};
 
 use std::env;
 use std::error::Error;
@@ -24,7 +24,7 @@ pub struct Prompt {
 impl Prompt {
     pub fn new(config: &Config) -> Prompt {
         let mut p = Prompt {
-            editor: create_editor(config),
+            editor: editor::create(config),
         };
         p.load_history();
         p

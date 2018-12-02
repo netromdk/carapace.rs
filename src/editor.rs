@@ -7,16 +7,16 @@ use rustyline::hint::Hinter;
 use rustyline::{Config, Editor, Helper};
 
 /// Creates `Editor` instance with proper config and completion.
-pub fn create_editor(cfg: &config::Config) -> Editor<EditorHelper> {
-    let config = Config::builder()
-        .history_ignore_space(true)
-        .history_ignore_dups(true)
-        .max_history_size(cfg.max_history_size)
-        .edit_mode(cfg.edit_mode)
-        .completion_type(cfg.completion_type)
-        .build();
-
-    let mut editor = Editor::with_config(config);
+pub fn create(config: &config::Config) -> Editor<EditorHelper> {
+    let mut editor = Editor::with_config(
+        Config::builder()
+            .history_ignore_space(true)
+            .history_ignore_dups(true)
+            .max_history_size(config.max_history_size)
+            .edit_mode(config.edit_mode)
+            .completion_type(config.completion_type)
+            .build(),
+    );
 
     let h = EditorHelper::new();
     editor.set_helper(Some(h));
