@@ -6,6 +6,8 @@ use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::{Config, Editor, Helper};
 
+use util;
+
 /// Creates `Editor` instance with proper config and completion.
 pub fn create(config: &config::Config) -> Editor<EditorHelper> {
     let mut editor = Editor::with_config(
@@ -83,19 +85,14 @@ impl<'c> Completer for EditorHelper<'c> {
 
     fn complete(&self, line: &str, pos: usize) -> Result<(usize, Vec<Pair>), ReadlineError> {
         // Do built-in command completion if position is within first word.
-        let mut builtin_cands = Vec::new();
-        if let Some(wpos) = line.find(char::is_whitespace) {
-            if pos < wpos {
-                builtin_cands = self.builtin_command_completer(line, pos);
-            }
-        } else {
-            builtin_cands = self.builtin_command_completer(line, pos);
-        }
+        if util::in_first_word(pos, line) {
+            let candidates = self.builtin_command_completer(line, pos);
 
-        // Only return candidates if more than none, otherwise default to file completion so it can
-        // be done on the first word also.
-        if builtin_cands.len() > 0 {
-            return Ok((pos, builtin_cands));
+            // Only return candidates if more than none, otherwise default to file completion so it
+            // can be done on the first word also.
+            if candidates.len() > 0 {
+                return Ok((pos, candidates));
+            }
         }
 
         // Otherwise, default to file completion.

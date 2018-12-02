@@ -36,6 +36,7 @@ pub mod command;
 pub mod config;
 pub mod editor;
 pub mod prompt;
+pub mod util;
 
 use config::Config;
 use prompt::Prompt;
