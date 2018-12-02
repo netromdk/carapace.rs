@@ -37,11 +37,7 @@ impl<'c> EditorHelper<'c> {
         }
     }
 
-    fn builtin_command_completer(
-        &self,
-        line: &str,
-        pos: usize,
-    ) -> Result<(usize, Vec<Pair>), ReadlineError> {
+    fn builtin_command_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
         let mut builtins = vec![
             "cd", "exit", "export", "h", "hist", "history", "quit", "set", "unset",
         ];
@@ -78,7 +74,7 @@ impl<'c> EditorHelper<'c> {
             }
         }
 
-        return Ok((pos, candidates));
+        return candidates;
     }
 }
 
@@ -87,12 +83,19 @@ impl<'c> Completer for EditorHelper<'c> {
 
     fn complete(&self, line: &str, pos: usize) -> Result<(usize, Vec<Pair>), ReadlineError> {
         // Do built-in command completion if position is within first word.
+        let mut builtin_cands = Vec::new();
         if let Some(wpos) = line.find(char::is_whitespace) {
             if pos < wpos {
-                return self.builtin_command_completer(line, pos);
+                builtin_cands = self.builtin_command_completer(line, pos);
             }
         } else {
-            return self.builtin_command_completer(line, pos);
+            builtin_cands = self.builtin_command_completer(line, pos);
+        }
+
+        // Only return candidates if more than none, otherwise default to file completion so it can
+        // be done on the first word also.
+        if builtin_cands.len() > 0 {
+            return Ok((pos, builtin_cands));
         }
 
         // Otherwise, default to file completion.
@@ -123,24 +126,14 @@ mod tests {
     #[test]
     fn builtin_complete_no_input_all_candidates() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("", 0)
-            .unwrap();
-        assert_eq!(pos, 0);
+        let pairs = editor.helper().unwrap().builtin_command_completer("", 0);
         assert_eq!(pairs.len(), 9);
     }
 
     #[test]
     fn builtin_complete_quit_cmd() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("q", 1)
-            .unwrap();
-        assert_eq!(pos, 1);
+        let pairs = editor.helper().unwrap().builtin_command_completer("q", 1);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "quit");
         assert_eq!(&pairs[0].replacement, "uit");
@@ -149,12 +142,7 @@ mod tests {
     #[test]
     fn builtin_complete_exit_cmd() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("exi", 3)
-            .unwrap();
-        assert_eq!(pos, 3);
+        let pairs = editor.helper().unwrap().builtin_command_completer("exi", 3);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "exit");
         assert_eq!(&pairs[0].replacement, "t");
@@ -163,12 +151,7 @@ mod tests {
     #[test]
     fn builtin_complete_history_cmd_h() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("h", 1)
-            .unwrap();
-        assert_eq!(pos, 1);
+        let pairs = editor.helper().unwrap().builtin_command_completer("h", 1);
         assert_eq!(pairs.len(), 3);
         assert_eq!(&pairs[0].display, "h");
         assert_eq!(&pairs[0].replacement, "");
@@ -181,12 +164,7 @@ mod tests {
     #[test]
     fn builtin_complete_history_cmd_hist() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("hi", 2)
-            .unwrap();
-        assert_eq!(pos, 2);
+        let pairs = editor.helper().unwrap().builtin_command_completer("hi", 2);
         assert_eq!(pairs.len(), 2);
         assert_eq!(&pairs[0].display, "hist");
         assert_eq!(&pairs[0].replacement, "st");
@@ -197,12 +175,10 @@ mod tests {
     #[test]
     fn builtin_complete_history_cmd() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
+        let pairs = editor
             .helper()
             .unwrap()
-            .builtin_command_completer("histo", 5)
-            .unwrap();
-        assert_eq!(pos, 5);
+            .builtin_command_completer("histo", 5);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "history");
         assert_eq!(&pairs[0].replacement, "ry");
@@ -211,12 +187,7 @@ mod tests {
     #[test]
     fn builtin_complete_unset_cmd() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("un", 2)
-            .unwrap();
-        assert_eq!(pos, 2);
+        let pairs = editor.helper().unwrap().builtin_command_completer("un", 2);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "unset");
         assert_eq!(&pairs[0].replacement, "set");
@@ -225,12 +196,7 @@ mod tests {
     #[test]
     fn builtin_complete_export_cmd() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("exp", 3)
-            .unwrap();
-        assert_eq!(pos, 3);
+        let pairs = editor.helper().unwrap().builtin_command_completer("exp", 3);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "export");
         assert_eq!(&pairs[0].replacement, "ort");
@@ -239,12 +205,7 @@ mod tests {
     #[test]
     fn builtin_complete_export_cmd_set() {
         create_test_editor!(editor);
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("s", 1)
-            .unwrap();
-        assert_eq!(pos, 1);
+        let pairs = editor.helper().unwrap().builtin_command_completer("s", 1);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "set");
         assert_eq!(&pairs[0].replacement, "et");
@@ -254,20 +215,13 @@ mod tests {
     fn builtin_complete_nothing_after_first_whitespace() {
         create_test_editor!(editor);
 
-        let (pos, pairs) = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("ls ", 3)
-            .unwrap();
-        assert_eq!(pos, 3);
+        let pairs = editor.helper().unwrap().builtin_command_completer("ls ", 3);
         assert_eq!(pairs.len(), 0);
 
-        let (pos, pairs) = editor
+        let pairs = editor
             .helper()
             .unwrap()
-            .builtin_command_completer("ls -lg /", 8)
-            .unwrap();
-        assert_eq!(pos, 8);
+            .builtin_command_completer("ls -lg /", 8);
         assert_eq!(pairs.len(), 0);
     }
 }
