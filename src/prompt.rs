@@ -1,4 +1,5 @@
 use command::{self, Command};
+use config::Config;
 use editor::{create_editor, EditorHelper};
 
 use std::env;
@@ -15,15 +16,18 @@ use rustyline::Editor;
 const SAFE_PROMPT: &str = "carapace % ";
 
 /// Controls showing the prompt and yielding lines from stdin.
-pub struct Prompt {
+pub struct Prompt<'c> {
+    config: &'c Config,
+
     /// Readline interface.
     pub editor: Editor<EditorHelper>,
 }
 
-impl Prompt {
-    pub fn new() -> Prompt {
+impl<'c> Prompt<'c> {
+    pub fn new(config: &'c Config) -> Prompt {
         let mut p = Prompt {
-            editor: create_editor(),
+            config,
+            editor: create_editor(config),
         };
         p.load_history();
         p
@@ -149,7 +153,7 @@ impl Prompt {
     }
 }
 
-impl Drop for Prompt {
+impl<'c> Drop for Prompt<'c> {
     fn drop(&mut self) {
         self.save_history();
     }

@@ -1,14 +1,16 @@
+use super::*;
+
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
-use rustyline::{CompletionType, Config, EditMode, Editor, Helper};
+use rustyline::{CompletionType, Config, Editor, Helper};
 
 /// Creates `Editor` instance with proper config and completion.
-pub fn create_editor() -> Editor<EditorHelper> {
+pub fn create_editor(cfg: &config::Config) -> Editor<EditorHelper> {
     let config = Config::builder()
         .history_ignore_space(true)
-        .edit_mode(EditMode::Emacs)
+        .edit_mode(cfg.edit_mode)
         .completion_type(CompletionType::List)
         .build();
 
