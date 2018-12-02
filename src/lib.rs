@@ -1,4 +1,31 @@
 //! Carapace is a general-purpose shell implementation done purely in Rust.
+//!
+//! # Configuration
+//!
+//! The configuration file resides at "~/.carapace/config.json". It will be created when first
+//! running carapace.
+//!
+//! An example config:
+//! ```json
+//! {
+//!   "max_history_size": 1000,
+//!   "edit_mode": "emacs",
+//!   "completion_type": "list",
+//!   "aliases": {
+//!     "l": "ls",
+//!     "ll": "ls -l"
+//!   }
+//! }
+//! ```
+//!
+//! ## Options
+//!
+//! - `max_history_size` takes a positive number as the maximum of entries to keep in history (at
+//! "~/.carapace/history").
+//! - `edit_mode` gives either `"emacs"` or `"vi"` bindings.
+//! - `completion_type` can either give a `"list"` of all possibilities, like Bash, or provide a
+//! `"circular"` completion of each candidate, like VI.
+//! - `aliases` is a "map" of (alias, command replacement) pairs, like `"ll": "ls -l"`.
 
 extern crate dirs;
 extern crate json;
