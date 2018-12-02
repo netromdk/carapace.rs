@@ -62,12 +62,12 @@ pub fn parse_command(
     args: Vec<String>,
 ) -> Result<Box<dyn Command>, Box<dyn Error>> {
     match program.as_ref() {
-        "quit" => Ok(Box::new(QuitCommand {})),
-        "exit" => Ok(Box::new(ExitCommand::new(args)?)),
         "cd" => Ok(Box::new(CdCommand::new(args))),
-        "history" | "hist" | "h" => Ok(Box::new(HistoryCommand {})),
-        "unset" => Ok(Box::new(UnsetCommand::new(args)?)),
+        "exit" => Ok(Box::new(ExitCommand::new(args)?)),
         "export" => Ok(Box::new(ExportCommand::new(args))),
+        "history" | "hist" | "h" => Ok(Box::new(HistoryCommand {})),
+        "quit" => Ok(Box::new(QuitCommand {})),
+        "unset" => Ok(Box::new(UnsetCommand::new(args)?)),
         _ => Ok(Box::new(GeneralCommand::new(program, args))),
     }
 }
