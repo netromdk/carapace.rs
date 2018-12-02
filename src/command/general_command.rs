@@ -13,7 +13,7 @@ impl GeneralCommand {
 }
 
 impl Command for GeneralCommand {
-    fn execute(&self, prompt: &Prompt) -> Result<bool, i32> {
+    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
         let output = process::Command::new(&self.program)
             .args(&self.args)
             .env_clear()

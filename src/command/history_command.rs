@@ -4,7 +4,7 @@ use super::*;
 pub struct HistoryCommand;
 
 impl Command for HistoryCommand {
-    fn execute(&self, prompt: &Prompt) -> Result<bool, i32> {
+    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
         let mut num = 1;
         for line in prompt.editor.history().iter() {
             println!("{:4}: {}", num, line);

@@ -29,7 +29,7 @@ impl CdCommand {
 }
 
 impl Command for CdCommand {
-    fn execute(&self, _prompt: &Prompt) -> Result<bool, i32> {
+    fn execute(&self, _prompt: &mut Prompt) -> Result<bool, i32> {
         if self.path == "~" {
             let home_dir = dirs::home_dir().unwrap_or_default();
             self.set_cwd(&home_dir);

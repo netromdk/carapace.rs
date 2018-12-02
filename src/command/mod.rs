@@ -24,7 +24,7 @@ use self::history_command::HistoryCommand;
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
     /// and `Err(exit_code)` on "exit" or "quit".
-    fn execute(&self, prompt: &Prompt) -> Result<bool, i32>;
+    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32>;
 
     /// Enable downcasting from trait object, like `dyn Command`, to concrete type, like
     /// `ExitCommand`.
