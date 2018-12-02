@@ -6,6 +6,7 @@ use std::fs;
 
 #[derive(Debug)]
 pub struct Config {
+    pub max_history_size: usize,
     pub edit_mode: EditMode,
     pub completion_type: CompletionType,
 }
@@ -14,6 +15,7 @@ impl Config {
     pub fn new() -> Config {
         // Set defaults.
         let mut c = Config {
+            max_history_size: 1000,
             edit_mode: EditMode::Emacs,
             completion_type: CompletionType::List,
         };
@@ -40,6 +42,10 @@ impl Config {
                     Ok(input) => {
                         for (key, value) in input.entries() {
                             match key.to_lowercase().as_ref() {
+                                "max_history_size" => {
+                                    self.max_history_size =
+                                        value.as_usize().unwrap_or(self.max_history_size)
+                                }
                                 "edit_mode" => {
                                     self.edit_mode = match value.as_str().unwrap() {
                                         "vi" => EditMode::Vi,
@@ -67,6 +73,7 @@ impl Config {
 
     pub fn save(&self) {
         let output = json::object![
+            "max_history_size" => self.max_history_size,
             "edit_mode" => match self.edit_mode {
                 EditMode::Emacs => "emacs",
                 EditMode::Vi => "vi"
