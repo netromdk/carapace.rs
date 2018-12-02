@@ -64,7 +64,7 @@ pub fn parse_command(
     match program.as_ref() {
         "cd" => Ok(Box::new(CdCommand::new(args))),
         "exit" => Ok(Box::new(ExitCommand::new(args)?)),
-        "export" => Ok(Box::new(ExportCommand::new(args))),
+        "export" | "set" => Ok(Box::new(ExportCommand::new(args))),
         "history" | "hist" | "h" => Ok(Box::new(HistoryCommand {})),
         "quit" => Ok(Box::new(QuitCommand {})),
         "unset" => Ok(Box::new(UnsetCommand::new(args)?)),

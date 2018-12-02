@@ -43,7 +43,7 @@ impl<'c> EditorHelper<'c> {
         pos: usize,
     ) -> Result<(usize, Vec<Pair>), ReadlineError> {
         let mut builtins = vec![
-            "cd", "exit", "export", "h", "hist", "history", "quit", "unset",
+            "cd", "exit", "export", "h", "hist", "history", "quit", "set", "unset",
         ];
 
         // Add aliases, if any.
@@ -129,7 +129,7 @@ mod tests {
             .builtin_command_completer("", 0)
             .unwrap();
         assert_eq!(pos, 0);
-        assert_eq!(pairs.len(), 8);
+        assert_eq!(pairs.len(), 9);
     }
 
     #[test]
@@ -234,6 +234,20 @@ mod tests {
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "export");
         assert_eq!(&pairs[0].replacement, "ort");
+    }
+
+    #[test]
+    fn builtin_complete_export_cmd_set() {
+        create_test_editor!(editor);
+        let (pos, pairs) = editor
+            .helper()
+            .unwrap()
+            .builtin_command_completer("s", 1)
+            .unwrap();
+        assert_eq!(pos, 1);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "set");
+        assert_eq!(&pairs[0].replacement, "et");
     }
 
     #[test]
