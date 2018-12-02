@@ -1,12 +1,13 @@
 use json;
 
-use rustyline::EditMode;
+use rustyline::{CompletionType, EditMode};
 
 use std::fs;
 
 #[derive(Debug)]
 pub struct Config {
     pub edit_mode: EditMode,
+    pub completion_type: CompletionType,
 }
 
 impl Config {
@@ -14,6 +15,7 @@ impl Config {
         // Set defaults.
         let mut c = Config {
             edit_mode: EditMode::Emacs,
+            completion_type: CompletionType::List,
         };
         c.load();
         c
@@ -44,6 +46,12 @@ impl Config {
                                         _ /*"emacs"*/ => EditMode::Emacs,
                                     };
                                 }
+                                "completion_type" => {
+                                    self.completion_type = match value.as_str().unwrap() {
+                                        "circular" => CompletionType::Circular,
+                                        _ /*"list"*/ => CompletionType::List,
+                                    };
+                                }
                                 _ => println!("Unknown config entry: {}={}", key, value),
                             }
                         }
@@ -62,6 +70,10 @@ impl Config {
             "edit_mode" => match self.edit_mode {
                 EditMode::Emacs => "emacs",
                 EditMode::Vi => "vi"
+            },
+            "completion_type" => match self.completion_type {
+                CompletionType::List => "list",
+                CompletionType::Circular => "circular",
             },
         ];
 
