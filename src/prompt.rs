@@ -16,17 +16,14 @@ use rustyline::Editor;
 const SAFE_PROMPT: &str = "carapace % ";
 
 /// Controls showing the prompt and yielding lines from stdin.
-pub struct Prompt<'c> {
-    config: &'c Config,
-
+pub struct Prompt {
     /// Readline interface.
     pub editor: Editor<EditorHelper>,
 }
 
-impl<'c> Prompt<'c> {
-    pub fn new(config: &'c Config) -> Prompt {
+impl Prompt {
+    pub fn new(config: &Config) -> Prompt {
         let mut p = Prompt {
-            config,
             editor: create_editor(config),
         };
         p.load_history();
@@ -153,7 +150,7 @@ impl<'c> Prompt<'c> {
     }
 }
 
-impl<'c> Drop for Prompt<'c> {
+impl Drop for Prompt {
     fn drop(&mut self) {
         self.save_history();
     }
