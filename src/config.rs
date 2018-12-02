@@ -47,13 +47,13 @@ impl Config {
                                         value.as_usize().unwrap_or(self.max_history_size)
                                 }
                                 "edit_mode" => {
-                                    self.edit_mode = match value.as_str().unwrap() {
+                                    self.edit_mode = match value.as_str().unwrap_or("emacs") {
                                         "vi" => EditMode::Vi,
                                         _ /*"emacs"*/ => EditMode::Emacs,
                                     };
                                 }
                                 "completion_type" => {
-                                    self.completion_type = match value.as_str().unwrap() {
+                                    self.completion_type = match value.as_str().unwrap_or("list") {
                                         "circular" => CompletionType::Circular,
                                         _ /*"list"*/ => CompletionType::List,
                                     };
