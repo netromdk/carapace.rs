@@ -2,6 +2,7 @@ use command::{self, Command};
 use config::Config;
 use editor::{self, EditorHelper};
 
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::fmt;
@@ -21,6 +22,9 @@ pub struct Prompt<'c> {
 
     /// Readline interface.
     pub editor: Editor<EditorHelper<'c>>,
+
+    /// Environment passed to newly spawned processes.
+    pub env: HashMap<String, String>,
 }
 
 impl<'c> Prompt<'c> {
@@ -28,6 +32,7 @@ impl<'c> Prompt<'c> {
         let mut p = Prompt {
             config,
             editor: editor::create(config),
+            env: env::vars().collect(),
         };
         p.load_history();
         p
