@@ -20,6 +20,9 @@ use self::general_command::GeneralCommand;
 pub mod history_command;
 use self::history_command::HistoryCommand;
 
+pub mod unset_command;
+use self::unset_command::UnsetCommand;
+
 /// Base trait of all commands.
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
@@ -60,6 +63,7 @@ pub fn parse_command(
         "exit" => Ok(Box::new(ExitCommand::new(args)?)),
         "cd" => Ok(Box::new(CdCommand::new(args))),
         "history" | "hist" | "h" => Ok(Box::new(HistoryCommand {})),
+        "unset" => Ok(Box::new(UnsetCommand::new(args)?)),
         _ => Ok(Box::new(GeneralCommand::new(program, args))),
     }
 }

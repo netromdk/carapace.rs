@@ -42,7 +42,7 @@ impl<'c> EditorHelper<'c> {
         line: &str,
         pos: usize,
     ) -> Result<(usize, Vec<Pair>), ReadlineError> {
-        let mut builtins = vec!["cd", "quit", "exit", "h", "hist", "history"];
+        let mut builtins = vec!["cd", "quit", "exit", "h", "hist", "history", "unset"];
 
         // Add aliases, if any.
         for (k, _) in &self.config.aliases {
