@@ -10,6 +10,7 @@ use rustyline::{Config, Editor, Helper};
 pub fn create_editor(cfg: &config::Config) -> Editor<EditorHelper> {
     let config = Config::builder()
         .history_ignore_space(true)
+        .history_ignore_dups(true)
         .max_history_size(cfg.max_history_size)
         .edit_mode(cfg.edit_mode)
         .completion_type(cfg.completion_type)
