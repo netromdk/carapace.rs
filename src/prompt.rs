@@ -16,14 +16,17 @@ use rustyline::Editor;
 const SAFE_PROMPT: &str = "carapace % ";
 
 /// Controls showing the prompt and yielding lines from stdin.
-pub struct Prompt {
+pub struct Prompt<'c> {
+    config: &'c Config,
+
     /// Readline interface.
     pub editor: Editor<EditorHelper>,
 }
 
-impl Prompt {
-    pub fn new(config: &Config) -> Prompt {
+impl<'c> Prompt<'c> {
+    pub fn new(config: &'c Config) -> Prompt {
         let mut p = Prompt {
+            config,
             editor: editor::create(config),
         };
         p.load_history();
@@ -44,22 +47,34 @@ impl Prompt {
                     return Err(Box::new(NoCommandError));
                 }
 
-                // Split on whitespace, convert to String parts, and replace all ~ with home dir
-                // (for parts starting with it only).
+                let mut values: Vec<String> =
+                    input.split_whitespace().map(|x| x.to_string()).collect();
+
+                // Check if program is an alias, and substitute in values.
+                if self.config.aliases.contains_key(&values[0]) {
+                    let alias_values: Vec<String> = self.config.aliases[&values[0]]
+                        .split_whitespace()
+                        .map(|x| x.to_string())
+                        .collect();
+                    let mut new_values = alias_values;
+                    new_values.append(&mut values.drain(1..).collect());
+                    values = new_values;
+                }
+
+                // Replace all ~ with home dir (for parts starting with it only).
                 let home_dir = dirs::home_dir().unwrap_or_default();
-                let mut values: Vec<String> = input
-                    .split_whitespace()
-                    .map(|x| {
-                        let mut s = x.to_string();
-                        if !s.starts_with("~") {
-                            s
+                values = values
+                    .into_iter()
+                    .map(|mut x| {
+                        if !x.starts_with("~") {
+                            x
                         } else {
-                            let cnt = if s.starts_with("~/") { 2 } else { 1 };
-                            let rest: String = s.drain(cnt..).collect();
+                            let cnt = if x.starts_with("~/") { 2 } else { 1 };
+                            let rest: String = x.drain(cnt..).collect();
                             if let Ok(res) = home_dir.join(&rest).into_os_string().into_string() {
                                 res
                             } else {
-                                s
+                                x
                             }
                         }
                     }).collect();
@@ -150,7 +165,7 @@ impl Prompt {
     }
 }
 
-impl Drop for Prompt {
+impl<'c> Drop for Prompt<'c> {
     fn drop(&mut self) {
         self.save_history();
     }

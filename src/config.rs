@@ -1,7 +1,8 @@
-use json;
+use json::{self, JsonValue};
 
 use rustyline::{CompletionType, EditMode};
 
+use std::collections::HashMap;
 use std::fs;
 
 #[derive(Debug)]
@@ -9,6 +10,7 @@ pub struct Config {
     pub max_history_size: usize,
     pub edit_mode: EditMode,
     pub completion_type: CompletionType,
+    pub aliases: HashMap<String, String>, // alias -> actual command.
 }
 
 impl Config {
@@ -18,6 +20,7 @@ impl Config {
             max_history_size: 1000,
             edit_mode: EditMode::Emacs,
             completion_type: CompletionType::List,
+            aliases: HashMap::new(),
         };
         c.load();
         c
@@ -58,6 +61,13 @@ impl Config {
                                         _ /*"list"*/ => CompletionType::List,
                                     };
                                 }
+                                "aliases" => {
+                                    for (key, val) in value.entries() {
+                                        if let Some(s) = val.as_str() {
+                                            self.aliases.insert(key.to_string(), s.to_string());
+                                        }
+                                    }
+                                }
                                 _ => println!("Unknown config entry: {}={}", key, value),
                             }
                         }
@@ -72,6 +82,11 @@ impl Config {
     }
 
     pub fn save(&self) {
+        let mut aliases = JsonValue::new_object();
+        for (key, value) in &self.aliases {
+            aliases[key] = JsonValue::from(value.clone());
+        }
+
         let output = json::object![
             "max_history_size" => self.max_history_size,
             "edit_mode" => match self.edit_mode {
@@ -82,6 +97,7 @@ impl Config {
                 CompletionType::List => "list",
                 CompletionType::Circular => "circular",
             },
+            "aliases" => aliases,
         ];
 
         let output = json::stringify_pretty(output, 2);
