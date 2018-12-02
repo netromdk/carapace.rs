@@ -15,13 +15,7 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Config {
-        // Set defaults.
-        let mut c = Config {
-            max_history_size: 1000,
-            edit_mode: EditMode::Emacs,
-            completion_type: CompletionType::List,
-            aliases: HashMap::new(),
-        };
+        let mut c = Config::default();
         c.load();
         c
     }
@@ -107,6 +101,17 @@ impl Config {
             .join("config.json");
         if let Err(err) = fs::write(&path, output) {
             println!("Could not write config to: {}\n{}", path.display(), err);
+        }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Config {
+        Config {
+            max_history_size: 1000,
+            edit_mode: EditMode::Emacs,
+            completion_type: CompletionType::List,
+            aliases: HashMap::new(),
         }
     }
 }
