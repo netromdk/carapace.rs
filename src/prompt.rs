@@ -20,7 +20,7 @@ pub struct Prompt<'c> {
     config: &'c Config,
 
     /// Readline interface.
-    pub editor: Editor<EditorHelper>,
+    pub editor: Editor<EditorHelper<'c>>,
 }
 
 impl<'c> Prompt<'c> {
