@@ -59,18 +59,15 @@ pub fn repl() {
         let mut prompt = Prompt::new(&config);
 
         loop {
-            let cmd = prompt.parse_command();
-            if let Err(err) = cmd {
-                print!("{}", err);
-                continue;
-            }
-
-            match cmd.unwrap().execute(&prompt) {
-                Ok(_) => continue,
-                Err(code) => {
-                    exit_code = code;
-                    break;
-                }
+            match prompt.parse_command() {
+                Ok(cmd) => match cmd.execute(&mut prompt) {
+                    Ok(_) => continue,
+                    Err(code) => {
+                        exit_code = code;
+                        break;
+                    }
+                },
+                Err(err) => println!("{}", err),
             }
         }
     }
