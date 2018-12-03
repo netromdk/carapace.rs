@@ -10,8 +10,9 @@ pub struct Config {
     pub max_history_size: usize,
     pub edit_mode: EditMode,
     pub completion_type: CompletionType,
-    pub aliases: HashMap<String, String>, // alias -> actual command.
     pub auto_cd: bool,
+    pub aliases: HashMap<String, String>, // alias -> actual command.
+    pub env: HashMap<String, String>,     // env var -> value.
 }
 
 impl Config {
@@ -67,6 +68,7 @@ impl Config {
             },
             "auto_cd" => self.auto_cd,
             "aliases" => util::hash_map_to_json(&self.aliases),
+            "env" => util::hash_map_to_json(&self.env),
         ];
 
         json::stringify_pretty(output, 2)
@@ -100,6 +102,9 @@ impl Config {
                         "aliases" => {
                             self.aliases = util::json_obj_to_hash_map(value);
                         }
+                        "env" => {
+                            self.env = util::json_obj_to_hash_map(value);
+                        }
                         _ => println!("Unknown config entry: {}={}", key, value),
                     }
                 }
@@ -117,8 +122,9 @@ impl Default for Config {
             max_history_size: 1000,
             edit_mode: EditMode::Emacs,
             completion_type: CompletionType::List,
-            aliases: HashMap::new(),
             auto_cd: true,
+            aliases: HashMap::new(),
+            env: HashMap::new(),
         }
     }
 }
@@ -138,7 +144,8 @@ mod tests {
   "edit_mode": "emacs",
   "completion_type": "list",
   "auto_cd": true,
-  "aliases": {}
+  "aliases": {},
+  "env": {}
 }"#
         );
     }
@@ -151,26 +158,38 @@ mod tests {
             completion_type: CompletionType::Circular,
             auto_cd: false,
             aliases: HashMap::new(),
+            env: HashMap::new(),
         };
         assert!(config.decode(
             r#"{
   "max_history_size": 123,
   "edit_mode": "emacs",
   "completion_type": "list",
+  "auto_cd": true,
   "aliases": {
     "l": "ls",
     "ll": "ls -l"
+  },
+  "env": {
+    "PATH": "$PATH:/something/bin"
   }
 }"#
         ));
         assert_eq!(config.max_history_size, 123);
         assert_eq!(config.edit_mode, EditMode::Emacs);
         assert_eq!(config.completion_type, CompletionType::List);
+        assert_eq!(config.auto_cd, true);
         assert_eq!(config.aliases.len(), 2);
         assert!(config.aliases.contains_key("l"));
         assert_eq!(config.aliases.get("l"), Some(&String::from("ls")));
         assert!(config.aliases.contains_key("ll"));
         assert_eq!(config.aliases.get("ll"), Some(&String::from("ls -l")));
+        assert_eq!(config.env.len(), 1);
+        assert!(config.env.contains_key("PATH"));
+        assert_eq!(
+            config.env.get("PATH"),
+            Some(&String::from("$PATH:/something/bin"))
+        );
     }
 
     #[test]
@@ -183,6 +202,7 @@ mod tests {
             completion_type: CompletionType::Circular,
             auto_cd: false,
             aliases: HashMap::new(),
+            env: HashMap::new(),
         };
         assert!(config2.decode(output.as_ref()));
         assert_eq!(config, config2);

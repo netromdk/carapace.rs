@@ -37,6 +37,7 @@ impl<'c> Prompt<'c> {
             env: env::vars().collect(),
         };
         p.load_history();
+        p.load_env();
         p
     }
 
@@ -179,6 +180,14 @@ impl<'c> Prompt<'c> {
         let path = dirs::home_dir().unwrap().join(".carapace").join("history");
         if let Err(err) = self.editor.save_history(&path) {
             println!("Could not save history to: {}\n{}", path.display(), err);
+        }
+    }
+
+    /// Load environment entries from config into session environment.
+    fn load_env(&mut self) {
+        for (k, v) in &self.config.env {
+            let v = util::replace_vars(v, &self.env);
+            self.env.insert(k.clone(), v);
         }
     }
 }
