@@ -25,7 +25,14 @@ impl Command for GeneralCommand {
             .stderr(Stdio::inherit())
             .output();
         match output {
-            Ok(output) => Ok(output.status.success()),
+            Ok(output) => {
+                // Update $? with exit code.
+                prompt.env.insert(
+                    "?".to_string(),
+                    output.status.code().unwrap_or(0).to_string(),
+                );
+                Ok(output.status.success())
+            }
             Err(err) => {
                 println!("{}", err);
                 Ok(false)
