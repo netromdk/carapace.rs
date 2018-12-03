@@ -1,6 +1,7 @@
 use command::{self, Command};
 use config::Config;
 use editor::{self, EditorHelper};
+use util;
 
 use std::collections::HashMap;
 use std::env;
@@ -54,11 +55,7 @@ impl<'c> Prompt<'c> {
                 }
 
                 // Replace all `$VAR` and `${VAR}` occurrences with values from environment.
-                for (k, v) in &self.env {
-                    input = input
-                        .replace(&format!("${}", k), v)
-                        .replace(&format!("${{{}}}", k), v);
-                }
+                input = util::replace_vars(&input, &self.env);
 
                 let mut values: Vec<String> =
                     input.split_whitespace().map(|x| x.to_string()).collect();

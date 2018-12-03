@@ -1,4 +1,4 @@
-use json::JsonValue;
+use util;
 
 use rustyline::{CompletionType, EditMode};
 
@@ -55,11 +55,6 @@ impl Config {
 
     /// Encodes config values into a JSON string.
     fn encode(&self) -> String {
-        let mut aliases = JsonValue::new_object();
-        for (key, value) in &self.aliases {
-            aliases[key] = JsonValue::from(value.clone());
-        }
-
         let output = json::object![
             "max_history_size" => self.max_history_size,
             "edit_mode" => match self.edit_mode {
@@ -71,7 +66,7 @@ impl Config {
                 CompletionType::Circular => "circular",
             },
             "auto_cd" => self.auto_cd,
-            "aliases" => aliases,
+            "aliases" => util::hash_map_to_json(&self.aliases),
         ];
 
         json::stringify_pretty(output, 2)
@@ -103,11 +98,7 @@ impl Config {
                             self.auto_cd = value.as_bool().unwrap_or(true);
                         }
                         "aliases" => {
-                            for (key, val) in value.entries() {
-                                if let Some(s) = val.as_str() {
-                                    self.aliases.insert(key.to_string(), s.to_string());
-                                }
-                            }
+                            self.aliases = util::json_obj_to_hash_map(value);
                         }
                         _ => println!("Unknown config entry: {}={}", key, value),
                     }
