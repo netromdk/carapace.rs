@@ -21,21 +21,29 @@ impl CdCommand {
         CdCommand { path }
     }
 
-    fn set_cwd(&self, dir: &Path) {
+    fn set_cwd(&self, dir: &Path, prompt: &mut Prompt) {
+        let fallback = "/";
+        let oldpwd = env::current_dir()
+            .unwrap_or(Path::new(fallback).to_path_buf())
+            .to_str()
+            .unwrap_or(fallback)
+            .to_string();
         if let Err(err) = env::set_current_dir(dir) {
             println!("Could not change to {}: {}", dir.display(), err);
+        } else {
+            prompt.env.insert("OLDPWD".to_string(), oldpwd);
         }
     }
 }
 
 impl Command for CdCommand {
-    fn execute(&self, _prompt: &mut Prompt) -> Result<bool, i32> {
+    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
         if self.path == "~" {
             let home_dir = dirs::home_dir().unwrap_or_default();
-            self.set_cwd(&home_dir);
+            self.set_cwd(&home_dir, prompt);
         } else {
             let path = Path::new(&self.path);
-            self.set_cwd(&path);
+            self.set_cwd(&path, prompt);
         }
         Ok(true)
     }
