@@ -47,9 +47,16 @@ impl<'c> Prompt<'c> {
             Ok(line) => {
                 self.editor.add_history_entry(line.as_ref());
 
-                let input = line.trim();
+                let mut input = line.trim().to_string();
                 if input.len() == 0 {
                     return Err(Box::new(NoCommandError));
+                }
+
+                // Replace all `$VAR` and `${VAR}` occurrences with values from environment.
+                for (k, v) in &self.env {
+                    input = input
+                        .replace(&format!("${}", k), v)
+                        .replace(&format!("${{{}}}", k), v);
                 }
 
                 let mut values: Vec<String> =
