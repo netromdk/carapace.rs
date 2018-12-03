@@ -39,7 +39,7 @@ pub mod prompt;
 pub mod util;
 
 use config::Config;
-use prompt::Prompt;
+use prompt::{EofError, Prompt};
 
 use std::fs;
 use std::process;
@@ -53,7 +53,7 @@ pub fn repl() {
         return;
     }
 
-    let exit_code;
+    let mut exit_code = 0;
 
     {
         let config = Config::new();
@@ -68,7 +68,13 @@ pub fn repl() {
                         break;
                     }
                 },
-                Err(err) => println!("{}", err),
+                Err(err) => {
+                    if err.is::<EofError>() {
+                        break;
+                    } else {
+                        println!("{}", err);
+                    }
+                }
             }
         }
     }

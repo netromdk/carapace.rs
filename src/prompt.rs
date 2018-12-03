@@ -177,7 +177,7 @@ impl<'c> Drop for Prompt<'c> {
 }
 
 #[derive(Debug)]
-struct EofError;
+pub struct EofError;
 
 impl Error for EofError {}
 
