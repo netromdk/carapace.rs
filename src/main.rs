@@ -1,5 +1,7 @@
 extern crate carapace;
 
+use std::process;
+
 fn main() {
-    carapace::repl();
+    process::exit(carapace::repl());
 }

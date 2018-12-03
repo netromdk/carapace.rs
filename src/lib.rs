@@ -42,43 +42,35 @@ use config::Config;
 use prompt::{EofError, Prompt};
 
 use std::fs;
-use std::process;
 
 /// Starts the read-eval-print-loop of the Carapace shell.
-pub fn repl() {
+/// Returns the exit code.
+pub fn repl() -> i32 {
     // Create init folder if not present.
     let path = dirs::home_dir().unwrap().join(".carapace");
     if let Err(err) = fs::create_dir_all(&path) {
         println!("Could not create init folder: {}\n{}", path.display(), err);
-        return;
+        return 1;
     }
 
-    let mut exit_code = 0;
+    let config = Config::new();
+    let mut prompt = Prompt::new(&config);
 
-    {
-        let config = Config::new();
-        let mut prompt = Prompt::new(&config);
-
-        loop {
-            match prompt.parse_command() {
-                Ok(cmd) => match cmd.execute(&mut prompt) {
-                    Ok(_) => continue,
-                    Err(code) => {
-                        exit_code = code;
-                        break;
-                    }
-                },
-                Err(err) => {
-                    if err.is::<EofError>() {
-                        break;
-                    } else {
-                        println!("{}", err);
-                    }
+    loop {
+        match prompt.parse_command() {
+            Ok(cmd) => match cmd.execute(&mut prompt) {
+                Ok(_) => continue,
+                Err(code) => {
+                    return code;
+                }
+            },
+            Err(err) => {
+                if err.is::<EofError>() {
+                    return 0;
+                } else {
+                    println!("{}", err);
                 }
             }
         }
     }
-
-    // Exits process immediately so things must be cleaned up before here!
-    process::exit(exit_code);
 }
