@@ -1,5 +1,7 @@
 use super::*;
 
+use std::process::Stdio;
+
 /// General command that executes program with arguments and waits for it to finish.
 pub struct GeneralCommand {
     pub program: String,
@@ -18,25 +20,12 @@ impl Command for GeneralCommand {
             .args(&self.args)
             .env_clear()
             .envs(&prompt.env)
+            // Inherit stdout/stderr so it is displayed with the shell, including term colors.
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .output();
         match output {
-            Ok(output) => {
-                let mut success = true;
-                let mut resp = String::from_utf8_lossy(&output.stdout);
-
-                if !output.status.success() {
-                    success = false;
-                    if resp.len() == 0 {
-                        resp = String::from_utf8_lossy(&output.stderr);
-                    }
-                }
-
-                if !resp.ends_with("\n") {
-                    resp += "\n";
-                }
-                print!("{}", resp);
-                Ok(success)
-            }
+            Ok(output) => Ok(output.status.success()),
             Err(err) => {
                 println!("{}", err);
                 Ok(false)
