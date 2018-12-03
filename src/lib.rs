@@ -11,6 +11,7 @@
 //!   "max_history_size": 1000,
 //!   "edit_mode": "emacs",
 //!   "completion_type": "list",
+//!   "auto_cd": true,
 //!   "aliases": {
 //!     "l": "ls",
 //!     "ll": "ls -l"
@@ -25,6 +26,7 @@
 //! - `edit_mode` gives either `"emacs"` or `"vi"` bindings.
 //! - `completion_type` can either give a `"list"` of all possibilities, like Bash, or provide a
 //! `"circular"` completion of each candidate, like VI.
+//! - `auto_cd` enables implicit `cd` command usage by inputting existing folder paths.
 //! - `aliases` is a "map" of (alias, command replacement) pairs, like `"ll": "ls -l"`.
 
 extern crate dirs;

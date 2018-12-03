@@ -7,6 +7,7 @@ use std::env;
 use std::error::Error;
 use std::fmt;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::path::Path;
 
 use term::{self, Terminal};
 
@@ -91,8 +92,16 @@ impl<'c> Prompt<'c> {
                         }
                     }).collect();
 
-                let program = values[0].clone();
-                let args = values.drain(1..).collect();
+                let mut program = values[0].clone();
+                let mut args: Vec<String> = values.drain(1..).collect();
+
+                // If input is an existing folder, and auto_cd is enabled, then set "cd" as the
+                // program.
+                if self.config.auto_cd && values.len() == 1 && Path::new(&values[0]).is_dir() {
+                    args = vec![program];
+                    program = "cd".to_string();
+                }
+
                 command::parse_command(program, args)
             }
             Err(ReadlineError::Interrupted) => {

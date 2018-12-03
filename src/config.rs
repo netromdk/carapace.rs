@@ -11,6 +11,7 @@ pub struct Config {
     pub edit_mode: EditMode,
     pub completion_type: CompletionType,
     pub aliases: HashMap<String, String>, // alias -> actual command.
+    pub auto_cd: bool,
 }
 
 impl Config {
@@ -69,6 +70,7 @@ impl Config {
                 CompletionType::List => "list",
                 CompletionType::Circular => "circular",
             },
+            "auto_cd" => self.auto_cd,
             "aliases" => aliases,
         ];
 
@@ -97,6 +99,9 @@ impl Config {
                                         _ /*"list"*/ => CompletionType::List,
                                     };
                         }
+                        "auto_cd" => {
+                            self.auto_cd = value.as_bool().unwrap_or(true);
+                        }
                         "aliases" => {
                             for (key, val) in value.entries() {
                                 if let Some(s) = val.as_str() {
@@ -122,6 +127,7 @@ impl Default for Config {
             edit_mode: EditMode::Emacs,
             completion_type: CompletionType::List,
             aliases: HashMap::new(),
+            auto_cd: true,
         }
     }
 }
@@ -140,6 +146,7 @@ mod tests {
   "max_history_size": 1000,
   "edit_mode": "emacs",
   "completion_type": "list",
+  "auto_cd": true,
   "aliases": {}
 }"#
         );
@@ -151,6 +158,7 @@ mod tests {
             max_history_size: 1,
             edit_mode: EditMode::Vi,
             completion_type: CompletionType::Circular,
+            auto_cd: false,
             aliases: HashMap::new(),
         };
         assert!(config.decode(
@@ -182,6 +190,7 @@ mod tests {
             max_history_size: 1,
             edit_mode: EditMode::Vi,
             completion_type: CompletionType::Circular,
+            auto_cd: false,
             aliases: HashMap::new(),
         };
         assert!(config2.decode(output.as_ref()));
