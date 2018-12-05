@@ -1,4 +1,5 @@
 use json::JsonValue;
+use regex::{Captures, Regex};
 
 use std::collections::HashMap;
 
@@ -32,9 +33,24 @@ pub fn json_obj_to_hash_map(obj: &JsonValue) -> HashMap<String, String> {
 pub fn replace_vars(data: &String, map: &HashMap<String, String>) -> String {
     let mut res = data.clone();
     for (k, v) in map {
-        res = res
-            .replace(&format!("${}", k), v)
-            .replace(&format!("${{{}}}", k), v);
+        // Bracketed version always replaces.
+        res = res.replace(&format!("${{{}}}", k), v);
+
+        // Non-bracketed version can only replace when complete subset of string. For instance,
+        // "$USER" must not replace in "$USERNAME" but "$USERNAME" can since it's the complete
+        // string.
+        let re = Regex::new(&format!(r"(\${})(\w)?", k)).unwrap();
+        res = re
+            .replace_all(&res, |caps: &Captures| {
+                // If not word char after match then accept.
+                if caps.get(2).is_none() {
+                    v
+                }
+                // Otherwise return whole match to replace with match so nothing is lost.
+                else {
+                    caps.get(0).unwrap().as_str()
+                }
+            }).into_owned();
     }
     res
 }
@@ -104,12 +120,51 @@ mod tests {
     }
 
     #[test]
-    fn test_replace_vars() {
+    fn replace_vars_general() {
         let input = String::from("$ONE, ${TWO}, $ONE, $THREE");
         let mut vars = HashMap::new();
         vars.insert("ONE".to_string(), "1".to_string());
         vars.insert("TWO".to_string(), "2".to_string());
         let output = replace_vars(&input, &vars);
         assert_eq!(output, "1, 2, 1, $THREE".to_string());
+    }
+
+    #[test]
+    fn replace_vars_dont_when_subset() {
+        let input = String::from("$USERNAME");
+        let mut vars = HashMap::new();
+        vars.insert("USER".to_string(), "test".to_string());
+        let output = replace_vars(&input, &vars);
+
+        // $USERNAME is not present and $USER is subset of $USERNAME, so don't replace!
+        assert_eq!(output, "$USERNAME".to_string());
+    }
+
+    #[test]
+    fn replace_vars_do_when_last() {
+        let input = String::from("$USER");
+        let mut vars = HashMap::new();
+        vars.insert("USER".to_string(), "test".to_string());
+        let output = replace_vars(&input, &vars);
+        assert_eq!(output, "test".to_string());
+    }
+
+    #[test]
+    fn replace_vars_do_when_subset_when_bracketed() {
+        let input = String::from("${USER}NAME");
+        let mut vars = HashMap::new();
+        vars.insert("USER".to_string(), "test".to_string());
+        let output = replace_vars(&input, &vars);
+        assert_eq!(output, "testNAME".to_string());
+    }
+
+    #[test]
+    fn replace_vars_use_longest_match() {
+        let input = String::from("$USERNAME");
+        let mut vars = HashMap::new();
+        vars.insert("USER".to_string(), "test".to_string());
+        vars.insert("USERNAME".to_string(), "foobar".to_string());
+        let output = replace_vars(&input, &vars);
+        assert_eq!(output, "foobar".to_string());
     }
 }

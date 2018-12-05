@@ -31,6 +31,7 @@
 
 extern crate dirs;
 extern crate json;
+extern crate regex;
 extern crate rustyline;
 extern crate term;
 
