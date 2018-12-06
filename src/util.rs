@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 lazy_static! {
     static ref WORD_REGEX: Regex = Regex::new(r"(\w+)").unwrap();
-    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$\w+)").unwrap();
+    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$\w*)").unwrap();
 }
 
 /// Check if `pos`ition is within first word in `text`.
@@ -19,6 +19,17 @@ pub fn in_first_word(pos: usize, text: &str) -> bool {
 pub fn word_at_pos(pos: usize, text: &str) -> String {
     assert!(pos <= text.len());
     for cap in WORD_REGEX.captures_iter(text) {
+        let cap = cap.get(0).unwrap();
+        if pos >= cap.start() && pos <= cap.end() {
+            return cap.as_str().to_string();
+        }
+    }
+    "".to_string()
+}
+
+pub fn env_var_at_pos(pos: usize, text: &str) -> String {
+    assert!(pos <= text.len());
+    for cap in ENV_VAR_REGEX.captures_iter(text) {
         let cap = cap.get(0).unwrap();
         if pos >= cap.start() && pos <= cap.end() {
             return cap.as_str().to_string();
@@ -126,6 +137,41 @@ mod tests {
     #[test]
     fn word_at_pos_after() {
         assert_eq!(word_at_pos(12, "hello world  and universe"), "");
+    }
+
+    #[test]
+    fn env_var_at_pos_beginning() {
+        assert_eq!(env_var_at_pos(0, "$hello world and universe"), "$hello");
+    }
+
+    #[test]
+    fn env_var_at_pos_start() {
+        assert_eq!(env_var_at_pos(6, "hello $world and universe"), "$world");
+    }
+
+    #[test]
+    fn env_var_at_pos_middle() {
+        assert_eq!(env_var_at_pos(2, "$hello world and universe"), "$hello");
+    }
+
+    #[test]
+    fn env_var_at_pos_end() {
+        assert_eq!(env_var_at_pos(11, "hello $world and universe"), "$world");
+    }
+
+    #[test]
+    fn env_var_at_pos_right_after() {
+        assert_eq!(env_var_at_pos(12, "hello $world and universe"), "$world");
+    }
+
+    #[test]
+    fn env_var_at_pos_after() {
+        assert_eq!(env_var_at_pos(13, "hello $world  and universe"), "");
+    }
+
+    #[test]
+    fn env_var_at_pos_only_dollar_sign() {
+        assert_eq!(env_var_at_pos(6, "hello $  and universe"), "$");
     }
 
     #[test]

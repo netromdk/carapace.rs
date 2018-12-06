@@ -89,6 +89,29 @@ impl<'c> EditorHelper<'c> {
 
         return candidates;
     }
+
+    fn env_var_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
+        let mut candidates = Vec::new();
+
+        let word = util::env_var_at_pos(pos, line);
+        if word.len() == 0 {
+            return candidates;
+        }
+
+        for (k, _) in &self.context.borrow().env {
+            let lookfor = format!("${}", k);
+            if lookfor.starts_with(&word) {
+                candidates.push(Pair {
+                    display: lookfor.clone(),
+
+                    // The missing part of the env variable.
+                    replacement: lookfor[word.len()..].to_string(),
+                });
+            }
+        }
+
+        candidates
+    }
 }
 
 impl<'c> Completer for EditorHelper<'c> {
@@ -104,6 +127,12 @@ impl<'c> Completer for EditorHelper<'c> {
             if candidates.len() > 0 {
                 return Ok((pos, candidates));
             }
+        }
+
+        // Do environment variable completion.
+        let candidates = self.env_var_completer(line, pos);
+        if candidates.len() > 0 {
+            return Ok((pos, candidates));
         }
 
         // Otherwise, default to file completion.
