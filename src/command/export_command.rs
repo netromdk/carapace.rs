@@ -14,10 +14,11 @@ impl ExportCommand {
 impl Command for ExportCommand {
     fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
         if self.vars.len() == 0 {
-            let mut keys: Vec<&String> = prompt.env.keys().peekable().collect();
+            let ctx = prompt.context.borrow();
+            let mut keys: Vec<&String> = ctx.env.keys().peekable().collect();
             keys.sort();
             for k in &keys {
-                println!("{}={}", k, prompt.env[*k]);
+                println!("{}={}", k, ctx.env[*k]);
             }
         } else {
             for var in &self.vars {
@@ -25,7 +26,7 @@ impl Command for ExportCommand {
                     Some(pos) => (var[..pos].to_string(), var[pos + 1..].to_string()),
                     None => (var.clone(), String::from("")),
                 };
-                prompt.env.insert(k, v);
+                prompt.context.borrow_mut().env.insert(k, v);
             }
         }
         Ok(true)

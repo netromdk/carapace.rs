@@ -8,8 +8,14 @@ use rustyline::{Config, Editor, Helper};
 
 use util;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 /// Creates `Editor` instance with proper config and completion.
-pub fn create(config: &config::Config) -> Editor<EditorHelper> {
+pub fn create<'c>(
+    config: &'c config::Config,
+    context: Rc<RefCell<context::Context>>,
+) -> Editor<EditorHelper<'c>> {
     let mut editor = Editor::with_config(
         Config::builder()
             .history_ignore_space(true)
@@ -20,7 +26,7 @@ pub fn create(config: &config::Config) -> Editor<EditorHelper> {
             .build(),
     );
 
-    let h = EditorHelper::new(config);
+    let h = EditorHelper::new(config, context);
     editor.set_helper(Some(h));
 
     editor
@@ -28,13 +34,18 @@ pub fn create(config: &config::Config) -> Editor<EditorHelper> {
 
 pub struct EditorHelper<'c> {
     pub config: &'c config::Config,
+    pub context: Rc<RefCell<context::Context>>,
     pub file_comp: Box<FilenameCompleter>,
 }
 
 impl<'c> EditorHelper<'c> {
-    pub fn new(config: &'c config::Config) -> EditorHelper {
+    pub fn new(
+        config: &'c config::Config,
+        context: Rc<RefCell<context::Context>>,
+    ) -> EditorHelper<'c> {
         EditorHelper {
             config,
+            context,
             file_comp: Box::new(FilenameCompleter::new()),
         }
     }
@@ -116,7 +127,8 @@ mod tests {
     macro_rules! create_test_editor {
         ($e:ident) => {
             let cfg = config::Config::default();
-            let $e = create(&cfg);
+            let ctx = Rc::new(RefCell::new(context::Context::new()));
+            let $e = create(&cfg, ctx);
         };
     }
 

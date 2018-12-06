@@ -16,10 +16,11 @@ impl GeneralCommand {
 
 impl Command for GeneralCommand {
     fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
+        let mut ctx = prompt.context.borrow_mut();
         let output = process::Command::new(&self.program)
             .args(&self.args)
             .env_clear()
-            .envs(&prompt.env)
+            .envs(&ctx.env)
             // Inherit stdout/stderr so it is displayed with the shell, including term colors.
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
@@ -27,7 +28,7 @@ impl Command for GeneralCommand {
         match output {
             Ok(output) => {
                 // Update $? with exit code.
-                prompt.env.insert(
+                ctx.env.insert(
                     "?".to_string(),
                     output.status.code().unwrap_or(0).to_string(),
                 );

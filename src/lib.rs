@@ -40,14 +40,18 @@ extern crate lazy_static;
 
 pub mod command;
 pub mod config;
+pub mod context;
 pub mod editor;
 pub mod prompt;
 pub mod util;
 
 use config::Config;
+use context::Context;
 use prompt::{EofError, Prompt};
 
+use std::cell::RefCell;
 use std::fs;
+use std::rc::Rc;
 
 /// Starts the read-eval-print-loop of the Carapace shell.
 /// Returns the exit code.
@@ -60,7 +64,8 @@ pub fn repl() -> i32 {
     }
 
     let config = Config::new();
-    let mut prompt = Prompt::new(&config);
+    let context = Rc::new(RefCell::new(Context::new()));
+    let mut prompt = Prompt::new(&config, context);
 
     loop {
         match prompt.parse_command() {

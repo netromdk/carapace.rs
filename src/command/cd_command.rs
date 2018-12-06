@@ -31,7 +31,11 @@ impl CdCommand {
         if let Err(err) = env::set_current_dir(dir) {
             println!("Could not change to {}: {}", dir.display(), err);
         } else {
-            prompt.env.insert("OLDPWD".to_string(), oldpwd);
+            prompt
+                .context
+                .borrow_mut()
+                .env
+                .insert("OLDPWD".to_string(), oldpwd);
         }
     }
 }

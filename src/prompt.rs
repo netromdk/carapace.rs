@@ -1,14 +1,16 @@
 use command::{self, Command};
 use config::Config;
+use context::Context;
 use editor::{self, EditorHelper};
 use util;
 
-use std::collections::HashMap;
+use std::cell::RefCell;
 use std::env;
 use std::error::Error;
 use std::fmt;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::path::Path;
+use std::rc::Rc;
 
 use term::{self, Terminal};
 
@@ -22,19 +24,19 @@ const SAFE_PROMPT: &str = "carapace % ";
 pub struct Prompt<'c> {
     config: &'c Config,
 
+    pub context: Rc<RefCell<Context>>,
+
     /// Readline interface.
     pub editor: Editor<EditorHelper<'c>>,
-
-    /// Environment passed to newly spawned processes.
-    pub env: HashMap<String, String>,
 }
 
 impl<'c> Prompt<'c> {
-    pub fn new(config: &'c Config) -> Prompt {
+    pub fn new(config: &'c Config, context: Rc<RefCell<Context>>) -> Prompt<'c> {
+        let editor = editor::create(config, context.clone());
         let mut p = Prompt {
             config,
-            editor: editor::create(config),
-            env: env::vars().collect(),
+            context,
+            editor,
         };
         p.load_history();
         p.load_env();
@@ -56,7 +58,7 @@ impl<'c> Prompt<'c> {
                 }
 
                 // Replace all `$VAR` and `${VAR}` occurrences with values from environment.
-                input = util::replace_vars(&input, &self.env);
+                input = util::replace_vars(&input, &self.context.borrow().env);
 
                 let mut values: Vec<String> =
                     input.split_whitespace().map(|x| x.to_string()).collect();
@@ -186,8 +188,9 @@ impl<'c> Prompt<'c> {
     /// Load environment entries from config into session environment.
     fn load_env(&mut self) {
         for (k, v) in &self.config.env {
-            let v = util::replace_vars(v, &self.env);
-            self.env.insert(k.clone(), v);
+            let mut ctx = self.context.borrow_mut();
+            let v = util::replace_vars(v, &ctx.env);
+            ctx.env.insert(k.clone(), v);
         }
     }
 }
