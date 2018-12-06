@@ -3,12 +3,28 @@ use regex::{Captures, Regex};
 
 use std::collections::HashMap;
 
+lazy_static! {
+    static ref WORD_REGEX: Regex = Regex::new(r"(\w+)").unwrap();
+    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$\w+)").unwrap();
+}
+
 /// Check if `pos`ition is within first word in `text`.
 pub fn in_first_word(pos: usize, text: &str) -> bool {
     if let Some(wpos) = text.find(char::is_whitespace) {
         return pos < wpos;
     }
     return true;
+}
+
+pub fn word_at_pos(pos: usize, text: &str) -> String {
+    assert!(pos <= text.len());
+    for cap in WORD_REGEX.captures_iter(text) {
+        let cap = cap.get(0).unwrap();
+        if pos >= cap.start() && pos <= cap.end() {
+            return cap.as_str().to_string();
+        }
+    }
+    "".to_string()
 }
 
 pub fn hash_map_to_json(map: &HashMap<String, String>) -> JsonValue {
@@ -28,10 +44,6 @@ pub fn json_obj_to_hash_map(obj: &JsonValue) -> HashMap<String, String> {
         }
     }
     map
-}
-
-lazy_static! {
-    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$\w+)").unwrap();
 }
 
 pub fn replace_vars(data: &String, map: &HashMap<String, String>) -> String {
@@ -84,6 +96,36 @@ mod tests {
     #[test]
     fn in_first_word_next_word() {
         assert!(!in_first_word(6, "hello world"));
+    }
+
+    #[test]
+    fn word_at_pos_beginning() {
+        assert_eq!(word_at_pos(0, "hello world and universe"), "hello");
+    }
+
+    #[test]
+    fn word_at_pos_start() {
+        assert_eq!(word_at_pos(6, "hello world and universe"), "world");
+    }
+
+    #[test]
+    fn word_at_pos_middle() {
+        assert_eq!(word_at_pos(2, "hello world and universe"), "hello");
+    }
+
+    #[test]
+    fn word_at_pos_end() {
+        assert_eq!(word_at_pos(10, "hello world and universe"), "world");
+    }
+
+    #[test]
+    fn word_at_pos_right_after() {
+        assert_eq!(word_at_pos(11, "hello world and universe"), "world");
+    }
+
+    #[test]
+    fn word_at_pos_after() {
+        assert_eq!(word_at_pos(12, "hello world  and universe"), "");
     }
 
     #[test]
