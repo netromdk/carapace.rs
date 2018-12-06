@@ -30,6 +30,10 @@ pub fn json_obj_to_hash_map(obj: &JsonValue) -> HashMap<String, String> {
     map
 }
 
+lazy_static! {
+    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$\w+)").unwrap();
+}
+
 pub fn replace_vars(data: &String, map: &HashMap<String, String>) -> String {
     let mut res = data.clone();
     for (k, v) in map {
@@ -39,16 +43,14 @@ pub fn replace_vars(data: &String, map: &HashMap<String, String>) -> String {
         // Non-bracketed version can only replace when complete subset of string. For instance,
         // "$USER" must not replace in "$USERNAME" but "$USERNAME" can since it's the complete
         // string.
-        let re = Regex::new(&format!(r"(\${})(\w)?", k)).unwrap();
-        res = re
+        let lookfor = format!("${}", k);
+        res = ENV_VAR_REGEX
             .replace_all(&res, |caps: &Captures| {
-                // If not word char after match then accept.
-                if caps.get(2).is_none() {
+                let m = caps.get(0).unwrap().as_str();
+                if m == lookfor {
                     v
-                }
-                // Otherwise return whole match to replace with match so nothing is lost.
-                else {
-                    caps.get(0).unwrap().as_str()
+                } else {
+                    m
                 }
             }).into_owned();
     }
