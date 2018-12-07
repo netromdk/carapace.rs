@@ -5,9 +5,10 @@ use std::collections::HashMap;
 
 lazy_static! {
     static ref WORD_REGEX: Regex = Regex::new(r"(\w+)").unwrap();
-    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$\w*)").unwrap();
-    static ref BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{(\w+)\})").unwrap();
-    static ref PARTIAL_BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{(\w*)\}?)").unwrap();
+    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$[\w\?#!\$_@\*]*)").unwrap();
+    static ref BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{([\w\?#!\$_@\*]+)\})").unwrap();
+    static ref PARTIAL_BRACKET_ENV_VAR_REGEX: Regex =
+        Regex::new(r"(\$\{([\w\?#!\$_@\*]*)\}?)").unwrap();
 }
 
 /// Check if `pos`ition is within first word in `text`.
