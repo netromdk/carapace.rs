@@ -63,7 +63,7 @@ pub fn repl() -> i32 {
     let mut prompt = Prompt::new(context);
 
     loop {
-        match prompt.parse_command() {
+        match prompt.show_parse_command() {
             Ok(cmd) => match cmd.execute(&mut prompt) {
                 Ok(_) => continue,
                 Err(code) => {

@@ -56,11 +56,10 @@ impl fmt::Display for CommandError {
     }
 }
 
+pub type CommandResult = Result<Box<dyn Command>, Box<dyn Error>>;
+
 /// Create command instance from `program` and `args`.
-pub fn parse_command(
-    program: String,
-    args: Vec<String>,
-) -> Result<Box<dyn Command>, Box<dyn Error>> {
+pub fn parse_command(program: String, args: Vec<String>) -> CommandResult {
     match program.as_ref() {
         "cd" => Ok(Box::new(CdCommand::new(args))),
         "exit" => Ok(Box::new(ExitCommand::new(args)?)),

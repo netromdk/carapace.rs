@@ -1,4 +1,4 @@
-use command::{self, Command};
+use command::{self, CommandResult};
 use context::Context;
 use editor::{self, EditorHelper};
 use util;
@@ -36,76 +36,12 @@ impl Prompt {
     }
 
     /// Shows prompt and reads command and arguments from stdin.
-    pub fn parse_command(&mut self) -> Result<Box<dyn Command>, Box<dyn Error>> {
+    pub fn show_parse_command(&mut self) -> CommandResult {
         let prompt_txt = self.prompt();
 
         let input = self.editor.readline(prompt_txt.as_ref());
         match input {
-            Ok(line) => {
-                self.editor.add_history_entry(line.as_ref());
-
-                let mut input = line.trim().to_string();
-                if input.len() == 0 {
-                    return Err(Box::new(NoCommandError));
-                }
-
-                // Replace all `$VAR` and `${VAR}` occurrences with values from environment.
-                input = util::replace_vars(&input, &self.context.borrow().env);
-
-                let mut values: Vec<String> =
-                    input.split_whitespace().map(|x| x.to_string()).collect();
-
-                // Check if program is an alias, and substitute in values.
-                if self
-                    .context
-                    .borrow()
-                    .config
-                    .aliases
-                    .contains_key(&values[0])
-                {
-                    let alias_values: Vec<String> = self.context.borrow().config.aliases
-                        [&values[0]]
-                        .split_whitespace()
-                        .map(|x| x.to_string())
-                        .collect();
-                    let mut new_values = alias_values;
-                    new_values.append(&mut values.drain(1..).collect());
-                    values = new_values;
-                }
-
-                // Replace all ~ with home dir (for parts starting with it only).
-                let home_dir = dirs::home_dir().unwrap_or_default();
-                values = values
-                    .into_iter()
-                    .map(|mut x| {
-                        if !x.starts_with("~") {
-                            x
-                        } else {
-                            let cnt = if x.starts_with("~/") { 2 } else { 1 };
-                            let rest: String = x.drain(cnt..).collect();
-                            if let Ok(res) = home_dir.join(&rest).into_os_string().into_string() {
-                                res
-                            } else {
-                                x
-                            }
-                        }
-                    }).collect();
-
-                let mut program = values[0].clone();
-                let mut args: Vec<String> = values.drain(1..).collect();
-
-                // If input is an existing folder, and auto_cd is enabled, then set "cd" as the
-                // program.
-                if self.context.borrow().config.auto_cd
-                    && values.len() == 1
-                    && Path::new(&values[0]).is_dir()
-                {
-                    args = vec![program];
-                    program = "cd".to_string();
-                }
-
-                command::parse_command(program, args)
-            }
+            Ok(line) => self.parse_command(line),
             Err(ReadlineError::Interrupted) => {
                 // TODO: Unhandled for now!
                 println!("^C");
@@ -117,6 +53,71 @@ impl Prompt {
                 Err(Box::new(err))
             }
         }
+    }
+
+    /// Parses command from input.
+    pub fn parse_command(&mut self, input: String) -> CommandResult {
+        self.editor.add_history_entry(input.as_ref());
+
+        let mut input = input.trim().to_string();
+        if input.len() == 0 {
+            return Err(Box::new(NoCommandError));
+        }
+
+        // Replace all `$VAR` and `${VAR}` occurrences with values from environment.
+        input = util::replace_vars(&input, &self.context.borrow().env);
+
+        let mut values: Vec<String> = input.split_whitespace().map(|x| x.to_string()).collect();
+
+        // Check if program is an alias, and substitute in values.
+        if self
+            .context
+            .borrow()
+            .config
+            .aliases
+            .contains_key(&values[0])
+        {
+            let alias_values: Vec<String> = self.context.borrow().config.aliases[&values[0]]
+                .split_whitespace()
+                .map(|x| x.to_string())
+                .collect();
+            let mut new_values = alias_values;
+            new_values.append(&mut values.drain(1..).collect());
+            values = new_values;
+        }
+
+        // Replace all ~ with home dir (for parts starting with it only).
+        let home_dir = dirs::home_dir().unwrap_or_default();
+        values = values
+            .into_iter()
+            .map(|mut x| {
+                if !x.starts_with("~") {
+                    x
+                } else {
+                    let cnt = if x.starts_with("~/") { 2 } else { 1 };
+                    let rest: String = x.drain(cnt..).collect();
+                    if let Ok(res) = home_dir.join(&rest).into_os_string().into_string() {
+                        res
+                    } else {
+                        x
+                    }
+                }
+            }).collect();
+
+        let mut program = values[0].clone();
+        let mut args: Vec<String> = values.drain(1..).collect();
+
+        // If input is an existing folder, and auto_cd is enabled, then set "cd" as the
+        // program.
+        if self.context.borrow().config.auto_cd
+            && values.len() == 1
+            && Path::new(&values[0]).is_dir()
+        {
+            args = vec![program];
+            program = "cd".to_string();
+        }
+
+        command::parse_command(program, args)
     }
 
     /// Yields the textual prompt with term colors.
