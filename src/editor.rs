@@ -161,10 +161,21 @@ impl<'c> Helper for EditorHelper<'c> {}
 mod tests {
     use super::*;
 
+    use std::collections::HashMap;
+
     macro_rules! create_test_editor {
         ($e:ident) => {
             let cfg = config::Config::default();
             let ctx = Rc::new(RefCell::new(context::Context::new()));
+            let $e = create(&cfg, ctx);
+        };
+    }
+
+    macro_rules! create_test_editor_with_env {
+        ($e:ident; $map:expr) => {
+            let cfg = config::Config::default();
+            let ctx = Rc::new(RefCell::new(context::Context::new()));
+            ctx.borrow_mut().env = $map;
             let $e = create(&cfg, ctx);
         };
     }
@@ -269,5 +280,64 @@ mod tests {
             .unwrap()
             .builtin_command_completer("ls -lg /", 8);
         assert_eq!(pairs.len(), 0);
+    }
+
+    #[test]
+    fn env_var_completer_normal_var() {
+        let mut env = HashMap::new();
+        env.insert("HELLO".to_string(), "WORLD".to_string());
+        create_test_editor_with_env!(editor; env);
+
+        let pairs = editor.helper().unwrap().env_var_completer("echo $HE", 8);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "$HELLO");
+        assert_eq!(&pairs[0].replacement, "LLO");
+    }
+
+    #[test]
+    fn env_var_completer_multiple_values() {
+        let mut env = HashMap::new();
+        env.insert("HELLO".to_string(), "0".to_string());
+        env.insert("HEY".to_string(), "1".to_string());
+        env.insert("HAND".to_string(), "2".to_string());
+        create_test_editor_with_env!(editor; env);
+
+        let pairs = editor.helper().unwrap().env_var_completer("echo $H", 7);
+        assert_eq!(pairs.len(), 3);
+
+        let contains = |needle: &Pair| {
+            for p in &pairs {
+                if p.display == needle.display && p.replacement == needle.replacement {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // Cannot rely on the order of the vector due to the HashMap used internally.
+        assert!(contains(&Pair {
+            display: "$HELLO".to_string(),
+            replacement: "ELLO".to_string(),
+        }));
+        assert!(contains(&Pair {
+            display: "$HEY".to_string(),
+            replacement: "EY".to_string(),
+        }));
+        assert!(contains(&Pair {
+            display: "$HAND".to_string(),
+            replacement: "AND".to_string(),
+        }));
+    }
+
+    #[test]
+    fn env_var_completer_bracket_var() {
+        let mut env = HashMap::new();
+        env.insert("HELLO".to_string(), "WORLD".to_string());
+        create_test_editor_with_env!(editor; env);
+
+        let pairs = editor.helper().unwrap().env_var_completer("echo ${HE", 9);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "${HELLO}");
+        assert_eq!(&pairs[0].replacement, "LLO}");
     }
 }
