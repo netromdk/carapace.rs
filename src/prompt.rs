@@ -15,7 +15,7 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 /// Fallback textual prompt if term formatting fails.
-const SAFE_PROMPT: &str = "carapace % ";
+const SAFE_PROMPT: &'static str = "carapace % ";
 
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt {
