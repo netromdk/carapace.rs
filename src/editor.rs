@@ -93,19 +93,27 @@ impl<'c> EditorHelper<'c> {
     fn env_var_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
         let mut candidates = Vec::new();
 
-        let word = util::env_var_at_pos(pos, line);
+        let word = util::partial_env_var_at_pos(pos, line);
         if word.len() == 0 {
             return candidates;
         }
 
         for (k, _) in &self.context.borrow().env {
             let lookfor = format!("${}", k);
+            let lookfor2 = format!("${{{}", k);
+
+            // Look for normal env var: $VAR
             if lookfor.starts_with(&word) {
                 candidates.push(Pair {
                     display: lookfor.clone(),
-
-                    // The missing part of the env variable.
                     replacement: lookfor[word.len()..].to_string(),
+                });
+            }
+            // Look for bracketed env var with no ending bracket: ${VAR
+            else if lookfor2.starts_with(&word) && !word.ends_with("}") {
+                candidates.push(Pair {
+                    display: lookfor2.clone() + "}",
+                    replacement: lookfor2[word.len()..].to_string() + "}",
                 });
             }
         }
