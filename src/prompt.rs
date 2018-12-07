@@ -1,5 +1,4 @@
 use command::{self, Command};
-use config::Config;
 use context::Context;
 use editor::{self, EditorHelper};
 use util;
@@ -21,23 +20,18 @@ use rustyline::Editor;
 const SAFE_PROMPT: &str = "carapace % ";
 
 /// Controls showing the prompt and yielding lines from stdin.
-pub struct Prompt<'c> {
-    config: &'c Config,
-
+pub struct Prompt {
+    /// General context of the shell.
     pub context: Rc<RefCell<Context>>,
 
     /// Readline interface.
-    pub editor: Editor<EditorHelper<'c>>,
+    pub editor: Editor<EditorHelper>,
 }
 
-impl<'c> Prompt<'c> {
-    pub fn new(config: &'c Config, context: Rc<RefCell<Context>>) -> Prompt<'c> {
-        let editor = editor::create(config, context.clone());
-        let mut p = Prompt {
-            config,
-            context,
-            editor,
-        };
+impl Prompt {
+    pub fn new(context: Rc<RefCell<Context>>) -> Prompt {
+        let editor = editor::create(context.clone());
+        let mut p = Prompt { context, editor };
         p.load_history();
         p.load_env();
         p
@@ -64,8 +58,15 @@ impl<'c> Prompt<'c> {
                     input.split_whitespace().map(|x| x.to_string()).collect();
 
                 // Check if program is an alias, and substitute in values.
-                if self.config.aliases.contains_key(&values[0]) {
-                    let alias_values: Vec<String> = self.config.aliases[&values[0]]
+                if self
+                    .context
+                    .borrow()
+                    .config
+                    .aliases
+                    .contains_key(&values[0])
+                {
+                    let alias_values: Vec<String> = self.context.borrow().config.aliases
+                        [&values[0]]
                         .split_whitespace()
                         .map(|x| x.to_string())
                         .collect();
@@ -97,7 +98,10 @@ impl<'c> Prompt<'c> {
 
                 // If input is an existing folder, and auto_cd is enabled, then set "cd" as the
                 // program.
-                if self.config.auto_cd && values.len() == 1 && Path::new(&values[0]).is_dir() {
+                if self.context.borrow().config.auto_cd
+                    && values.len() == 1
+                    && Path::new(&values[0]).is_dir()
+                {
                     args = vec![program];
                     program = "cd".to_string();
                 }
@@ -187,7 +191,7 @@ impl<'c> Prompt<'c> {
 
     /// Load environment entries from config into session environment.
     fn load_env(&mut self) {
-        for (k, v) in &self.config.env {
+        for (k, v) in &self.context.borrow().config.env {
             let mut ctx = self.context.borrow_mut();
             let v = util::replace_vars(v, &ctx.env);
             ctx.env.insert(k.clone(), v);
@@ -195,7 +199,7 @@ impl<'c> Prompt<'c> {
     }
 }
 
-impl<'c> Drop for Prompt<'c> {
+impl Drop for Prompt {
     fn drop(&mut self) {
         self.save_history();
     }

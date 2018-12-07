@@ -45,7 +45,6 @@ pub mod editor;
 pub mod prompt;
 pub mod util;
 
-use config::Config;
 use context::Context;
 use prompt::{EofError, Prompt};
 
@@ -63,9 +62,8 @@ pub fn repl() -> i32 {
         return 1;
     }
 
-    let config = Config::new();
     let context = Rc::new(RefCell::new(Context::new()));
-    let mut prompt = Prompt::new(&config, context);
+    let mut prompt = Prompt::new(context);
 
     loop {
         match prompt.parse_command() {

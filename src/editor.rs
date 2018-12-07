@@ -12,10 +12,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 /// Creates `Editor` instance with proper config and completion.
-pub fn create<'c>(
-    config: &'c config::Config,
-    context: Rc<RefCell<context::Context>>,
-) -> Editor<EditorHelper<'c>> {
+pub fn create(context: Rc<RefCell<context::Context>>) -> Editor<EditorHelper> {
+    let config = &context.borrow().config;
     let mut editor = Editor::with_config(
         Config::builder()
             .history_ignore_space(true)
@@ -26,38 +24,36 @@ pub fn create<'c>(
             .build(),
     );
 
-    let h = EditorHelper::new(config, context);
+    let h = EditorHelper::new(context.clone());
     editor.set_helper(Some(h));
 
     editor
 }
 
-pub struct EditorHelper<'c> {
-    pub config: &'c config::Config,
+pub struct EditorHelper {
     pub context: Rc<RefCell<context::Context>>,
     pub file_comp: Box<FilenameCompleter>,
 }
 
-impl<'c> EditorHelper<'c> {
-    pub fn new(
-        config: &'c config::Config,
-        context: Rc<RefCell<context::Context>>,
-    ) -> EditorHelper<'c> {
+impl EditorHelper {
+    pub fn new(context: Rc<RefCell<context::Context>>) -> EditorHelper {
         EditorHelper {
-            config,
             context,
             file_comp: Box::new(FilenameCompleter::new()),
         }
     }
 
     fn builtin_command_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
-        let mut builtins = vec![
+        let mut builtins: Vec<String> = vec![
             "cd", "exit", "export", "h", "hist", "history", "quit", "set", "unset",
-        ];
+        ].into_iter()
+        .map(|x| x.to_string())
+        .collect();
 
         // Add aliases, if any.
-        for (k, _) in &self.config.aliases {
-            builtins.push(k);
+        let config = &self.context.borrow().config;
+        for (k, _) in &config.aliases {
+            builtins.push(k.clone());
         }
 
         let mut candidates = Vec::new();
@@ -122,7 +118,7 @@ impl<'c> EditorHelper<'c> {
     }
 }
 
-impl<'c> Completer for EditorHelper<'c> {
+impl Completer for EditorHelper {
     type Candidate = Pair;
 
     fn complete(&self, line: &str, pos: usize) -> Result<(usize, Vec<Pair>), ReadlineError> {
@@ -148,14 +144,14 @@ impl<'c> Completer for EditorHelper<'c> {
     }
 }
 
-impl<'c> Hinter for EditorHelper<'c> {
+impl Hinter for EditorHelper {
     fn hint(&self, _line: &str, _pos: usize) -> Option<String> {
         None
     }
 }
 
-impl<'c> Highlighter for EditorHelper<'c> {}
-impl<'c> Helper for EditorHelper<'c> {}
+impl Highlighter for EditorHelper {}
+impl Helper for EditorHelper {}
 
 #[cfg(test)]
 mod tests {
@@ -165,18 +161,16 @@ mod tests {
 
     macro_rules! create_test_editor {
         ($e:ident) => {
-            let cfg = config::Config::default();
-            let ctx = Rc::new(RefCell::new(context::Context::new()));
-            let $e = create(&cfg, ctx);
+            let ctx = Rc::new(RefCell::new(context::Context::default()));
+            let $e = create(ctx);
         };
     }
 
     macro_rules! create_test_editor_with_env {
         ($e:ident; $map:expr) => {
-            let cfg = config::Config::default();
-            let ctx = Rc::new(RefCell::new(context::Context::new()));
+            let ctx = Rc::new(RefCell::new(context::Context::default()));
             ctx.borrow_mut().env = $map;
-            let $e = create(&cfg, ctx);
+            let $e = create(ctx);
         };
     }
 
