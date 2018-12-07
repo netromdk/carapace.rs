@@ -3,13 +3,11 @@ use context::Context;
 use editor::{self, EditorHelper};
 use util;
 
-use std::cell::RefCell;
 use std::env;
 use std::error::Error;
 use std::fmt;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::path::Path;
-use std::rc::Rc;
 
 use term::{self, Terminal};
 
@@ -22,14 +20,14 @@ const SAFE_PROMPT: &str = "carapace % ";
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt {
     /// General context of the shell.
-    pub context: Rc<RefCell<Context>>,
+    pub context: Context,
 
     /// Readline interface.
     pub editor: Editor<EditorHelper>,
 }
 
 impl Prompt {
-    pub fn new(context: Rc<RefCell<Context>>) -> Prompt {
+    pub fn new(context: Context) -> Prompt {
         let editor = editor::create(context.clone());
         let mut p = Prompt { context, editor };
         p.load_history();

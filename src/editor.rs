@@ -1,18 +1,14 @@
-use super::*;
-
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::{Config, Editor, Helper};
 
+use context::Context;
 use util;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 /// Creates `Editor` instance with proper config and completion.
-pub fn create(context: Rc<RefCell<context::Context>>) -> Editor<EditorHelper> {
+pub fn create(context: Context) -> Editor<EditorHelper> {
     let config = &context.borrow().config;
     let mut editor = Editor::with_config(
         Config::builder()
@@ -31,12 +27,12 @@ pub fn create(context: Rc<RefCell<context::Context>>) -> Editor<EditorHelper> {
 }
 
 pub struct EditorHelper {
-    pub context: Rc<RefCell<context::Context>>,
+    pub context: Context,
     pub file_comp: Box<FilenameCompleter>,
 }
 
 impl EditorHelper {
-    pub fn new(context: Rc<RefCell<context::Context>>) -> EditorHelper {
+    pub fn new(context: Context) -> EditorHelper {
         EditorHelper {
             context,
             file_comp: Box::new(FilenameCompleter::new()),
@@ -159,16 +155,18 @@ mod tests {
 
     use std::collections::HashMap;
 
+    use context;
+
     macro_rules! create_test_editor {
         ($e:ident) => {
-            let ctx = Rc::new(RefCell::new(context::Context::default()));
+            let ctx = context::default();
             let $e = create(ctx);
         };
     }
 
     macro_rules! create_test_editor_with_env {
         ($e:ident; $map:expr) => {
-            let ctx = Rc::new(RefCell::new(context::Context::default()));
+            let ctx = context::default();
             ctx.borrow_mut().env = $map;
             let $e = create(ctx);
         };

@@ -45,12 +45,9 @@ pub mod editor;
 pub mod prompt;
 pub mod util;
 
-use context::Context;
 use prompt::{EofError, Prompt};
 
-use std::cell::RefCell;
 use std::fs;
-use std::rc::Rc;
 
 /// Starts the read-eval-print-loop of the Carapace shell.
 /// Returns the exit code.
@@ -62,7 +59,7 @@ pub fn repl() -> i32 {
         return 1;
     }
 
-    let context = Rc::new(RefCell::new(Context::new()));
+    let context = context::new();
     let mut prompt = Prompt::new(context);
 
     loop {
