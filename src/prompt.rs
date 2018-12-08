@@ -181,7 +181,7 @@ impl Prompt {
         }
     }
 
-    fn save_history(&self) {
+    pub fn save_history(&self) {
         let path = dirs::home_dir().unwrap().join(".carapace").join("history");
         if let Err(err) = self.editor.save_history(&path) {
             println!("Could not save history to: {}\n{}", path.display(), err);
