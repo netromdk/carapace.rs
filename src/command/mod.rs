@@ -3,7 +3,7 @@ use std::error::Error;
 use std::fmt;
 use std::process;
 
-use super::Prompt;
+use super::prompt::{EofError, Prompt};
 
 pub mod exit_command;
 use self::exit_command::ExitCommand;
@@ -59,7 +59,7 @@ impl fmt::Display for CommandError {
 pub type CommandResult = Result<Box<dyn Command>, Box<dyn Error>>;
 
 /// Create command instance from `program` and `args`.
-pub fn parse_command(program: String, args: Vec<String>) -> CommandResult {
+pub fn parse(program: String, args: Vec<String>) -> CommandResult {
     match program.as_ref() {
         "cd" => Ok(Box::new(CdCommand::new(args))),
         "exit" => Ok(Box::new(ExitCommand::new(args)?)),
@@ -71,59 +71,77 @@ pub fn parse_command(program: String, args: Vec<String>) -> CommandResult {
     }
 }
 
+/// Execute command and yield optional exit code value.
+pub fn execute(cmd: CommandResult, prompt: &mut Prompt) -> Option<i32> {
+    match cmd {
+        Ok(cmd) => match cmd.execute(prompt) {
+            Ok(_) => None,
+            Err(code) => Some(code),
+        },
+        Err(err) => {
+            if err.is::<EofError>() {
+                Some(0)
+            } else {
+                println!("{}", err);
+                None
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn parse_command_quit() {
-        let cmd = parse_command(String::from("quit"), vec![]).unwrap();
+    fn parse_quit() {
+        let cmd = parse(String::from("quit"), vec![]).unwrap();
         let cmd = cmd.as_any().downcast_ref::<QuitCommand>();
         assert!(cmd.is_some());
     }
 
     #[test]
-    fn parse_command_exit() {
-        let cmd = parse_command(String::from("exit"), vec![]).unwrap();
+    fn parse_exit() {
+        let cmd = parse(String::from("exit"), vec![]).unwrap();
         let cmd = cmd.as_any().downcast_ref::<ExitCommand>();
         assert!(cmd.is_some());
         assert_eq!(cmd.unwrap().code, 0);
     }
 
     #[test]
-    fn parse_command_cd() {
-        let cmd = parse_command(String::from("cd"), vec![]).unwrap();
+    fn parse_cd() {
+        let cmd = parse(String::from("cd"), vec![]).unwrap();
         let cmd = cmd.as_any().downcast_ref::<CdCommand>();
         assert!(cmd.is_some());
         assert_eq!(cmd.unwrap().path, "~");
     }
 
     #[test]
-    fn parse_command_history() {
-        let cmd = parse_command(String::from("history"), vec![]).unwrap();
+    fn parse_history() {
+        let cmd = parse(String::from("history"), vec![]).unwrap();
         let cmd = cmd.as_any().downcast_ref::<HistoryCommand>();
         assert!(cmd.is_some());
     }
 
     #[test]
-    fn parse_command_history_hist() {
-        let cmd = parse_command(String::from("hist"), vec![]).unwrap();
+    fn parse_history_hist() {
+        let cmd = parse(String::from("hist"), vec![]).unwrap();
         let cmd = cmd.as_any().downcast_ref::<HistoryCommand>();
         assert!(cmd.is_some());
     }
 
     #[test]
-    fn parse_command_history_h() {
-        let cmd = parse_command(String::from("h"), vec![]).unwrap();
+    fn parse_history_h() {
+        let cmd = parse(String::from("h"), vec![]).unwrap();
         let cmd = cmd.as_any().downcast_ref::<HistoryCommand>();
         assert!(cmd.is_some());
     }
 
     #[test]
-    fn parse_command_general() {
+    fn parse_general() {
         let prog = String::from("ls");
         let args = vec![String::from("-lh"), String::from("~/git")];
-        let cmd = parse_command(prog.clone(), args.clone()).unwrap();
+        let cmd = parse(prog.clone(), args.clone()).unwrap();
 
         let cmd = cmd.as_any().downcast_ref::<GeneralCommand>();
         assert!(cmd.is_some());

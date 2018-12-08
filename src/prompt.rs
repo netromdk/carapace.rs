@@ -117,7 +117,7 @@ impl Prompt {
             program = "cd".to_string();
         }
 
-        command::parse_command(program, args)
+        command::parse(program, args)
     }
 
     /// Yields the textual prompt with term colors.

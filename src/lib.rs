@@ -46,7 +46,7 @@ pub mod editor;
 pub mod prompt;
 pub mod util;
 
-use prompt::{EofError, Prompt};
+use prompt::Prompt;
 
 use clap::ArgMatches;
 
@@ -68,14 +68,9 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
 
     // If -c <command> is specified then run command and exit.
     if let Some(command) = arg_matches.value_of("command") {
-        match prompt.parse_command(command.to_string()) {
-            Ok(cmd) => match cmd.execute(&mut prompt) {
-                Ok(_) => (),
-                Err(code) => return code,
-            },
-            Err(err) => {
-                println!("{}", err);
-            }
+        let cmd = prompt.parse_command(command.to_string());
+        if let Some(code) = command::execute(cmd, &mut prompt) {
+            return code;
         }
         return 0;
     }
@@ -86,34 +81,18 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
             if line.is_err() {
                 return 1;
             }
-            match prompt.parse_command(line.unwrap()) {
-                Ok(cmd) => match cmd.execute(&mut prompt) {
-                    Ok(_) => (),
-                    Err(code) => return code,
-                },
-                Err(err) => {
-                    println!("{}", err);
-                }
+
+            let cmd = prompt.parse_command(line.unwrap());
+            if let Some(code) = command::execute(cmd, &mut prompt) {
+                return code;
             }
         }
         return 0;
     }
 
     loop {
-        match prompt.show_parse_command() {
-            Ok(cmd) => match cmd.execute(&mut prompt) {
-                Ok(_) => (),
-                Err(code) => {
-                    return code;
-                }
-            },
-            Err(err) => {
-                if err.is::<EofError>() {
-                    return 0;
-                } else {
-                    println!("{}", err);
-                }
-            }
+        if let Some(code) = command::execute(prompt.show_parse_command(), &mut prompt) {
+            return code;
         }
     }
 }
