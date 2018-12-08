@@ -29,6 +29,7 @@
 //! - `auto_cd` enables implicit `cd` command usage by inputting existing folder paths.
 //! - `aliases` is a "map" of (alias, command replacement) pairs, like `"ll": "ls -l"`.
 
+extern crate clap;
 extern crate dirs;
 extern crate json;
 extern crate regex;
@@ -47,11 +48,13 @@ pub mod util;
 
 use prompt::{EofError, Prompt};
 
+use clap::ArgMatches;
+
 use std::fs;
 
-/// Starts the read-eval-print-loop of the Carapace shell.
-/// Returns the exit code.
-pub fn repl() -> i32 {
+/// Starts the read-eval-print-loop of the Carapace shell, with supplied, parsed CLI arguments, if
+/// any. Returns the exit code.
+pub fn repl(arg_matches: &ArgMatches) -> i32 {
     // Create init folder if not present.
     let path = dirs::home_dir().unwrap().join(".carapace");
     if let Err(err) = fs::create_dir_all(&path) {
@@ -62,10 +65,24 @@ pub fn repl() -> i32 {
     let context = context::new();
     let mut prompt = Prompt::new(context);
 
+    // If -c <command> is specified then run command and exit.
+    if let Some(command) = arg_matches.value_of("command") {
+        match prompt.parse_command(command.to_string()) {
+            Ok(cmd) => match cmd.execute(&mut prompt) {
+                Ok(_) => (),
+                Err(code) => return code,
+            },
+            Err(err) => {
+                println!("{}", err);
+            }
+        }
+        return 0;
+    }
+
     loop {
         match prompt.show_parse_command() {
             Ok(cmd) => match cmd.execute(&mut prompt) {
-                Ok(_) => continue,
+                Ok(_) => (),
                 Err(code) => {
                     return code;
                 }
