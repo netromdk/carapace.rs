@@ -51,6 +51,7 @@ use prompt::{EofError, Prompt};
 use clap::ArgMatches;
 
 use std::fs;
+use std::io::{self, BufRead};
 
 /// Starts the read-eval-print-loop of the Carapace shell, with supplied, parsed CLI arguments, if
 /// any. Returns the exit code.
@@ -74,6 +75,25 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
             },
             Err(err) => {
                 println!("{}", err);
+            }
+        }
+        return 0;
+    }
+    // Read commands from STDIN, one per line, and exit.
+    else if arg_matches.is_present("stdin") {
+        let stdin = io::stdin();
+        for line in stdin.lock().lines() {
+            if line.is_err() {
+                return 1;
+            }
+            match prompt.parse_command(line.unwrap()) {
+                Ok(cmd) => match cmd.execute(&mut prompt) {
+                    Ok(_) => (),
+                    Err(code) => return code,
+                },
+                Err(err) => {
+                    println!("{}", err);
+                }
             }
         }
         return 0;
