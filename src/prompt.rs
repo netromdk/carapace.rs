@@ -108,7 +108,8 @@ impl Prompt {
                         x
                     }
                 }
-            }).collect();
+            })
+            .collect();
 
         let mut program = values[0].clone();
         let mut args: Vec<String> = values.drain(1..).collect();
@@ -145,19 +146,25 @@ impl Prompt {
         if t.fg(term::color::GREEN).is_err() {
             return safe_prompt();
         }
-        write!(t, "carapace");
+        if write!(t, "carapace").is_err() {
+            println!("Failed to write to term!");
+        }
 
         if let Ok(cwd) = env::current_dir() {
             if t.fg(term::color::BRIGHT_BLUE).is_err() {
                 return safe_prompt();
             }
-            write!(t, " {}", cwd.display());
+            if write!(t, " {}", cwd.display()).is_err() {
+                println!("Failed to write to term!");
+            }
         }
 
         if t.fg(term::color::GREEN).is_err() {
             return safe_prompt();
         }
-        write!(t, " % ");
+        if write!(t, " % ").is_err() {
+            println!("Failed to write to term!");
+        }
 
         // NOTE: Resetting yields extra space at end with is annoying, so hardcoding to white color
         // at end.
@@ -274,12 +281,11 @@ mod tests {
 
         let cmd = prompt.parse_command("ls -l".to_string());
         assert!(cmd.is_ok());
-        assert!(
-            cmd.unwrap()
-                .as_any()
-                .downcast_ref::<GeneralCommand>()
-                .is_some()
-        );
+        assert!(cmd
+            .unwrap()
+            .as_any()
+            .downcast_ref::<GeneralCommand>()
+            .is_some());
     }
 
     #[test]
