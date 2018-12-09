@@ -1,19 +1,40 @@
 use super::*;
 
+use clap::{App, AppSettings, Arg};
+
 /// Export command adds (variable, value) pairs to environment.
 pub struct ExportCommand {
-    vars: Vec<String>,
+    args: Vec<String>,
+    app: App<'static, 'static>,
 }
 
 impl ExportCommand {
     pub fn new(args: Vec<String>) -> ExportCommand {
-        ExportCommand { vars: args }
+        ExportCommand {
+            args,
+            app: App::new("export")
+                .about(
+                    "List or export new environment variables with values.\n\nCommand alias: set",
+                ).setting(AppSettings::NoBinaryName)
+                .setting(AppSettings::DisableVersion)
+                .arg(
+                    Arg::with_name("vars").multiple(true).help(
+                        "Variable with optional value input as: 'variable' or 'variable=value'",
+                    ),
+                ),
+        }
     }
 }
 
 impl Command for ExportCommand {
     fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
-        if self.vars.len() == 0 {
+        let matches = self.app.get_matches_from_safe_borrow(&self.args);
+        if matches.is_err() {
+            println!("{}", matches.unwrap_err());
+            return Ok(false);
+        }
+
+        if self.args.len() == 0 {
             let ctx = prompt.context.borrow();
             let mut keys: Vec<&String> = ctx.env.keys().peekable().collect();
             keys.sort();
@@ -21,7 +42,7 @@ impl Command for ExportCommand {
                 println!("{}={}", k, ctx.env[*k]);
             }
         } else {
-            for var in &self.vars {
+            for var in &self.args {
                 let (k, v) = match var.find('=') {
                     Some(pos) => (var[..pos].to_string(), var[pos + 1..].to_string()),
                     None => (var.clone(), String::from("")),
