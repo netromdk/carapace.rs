@@ -226,3 +226,97 @@ impl fmt::Display for NoCommandError {
         write!(f, "")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use command::cd_command::CdCommand;
+    use command::general_command::GeneralCommand;
+    use config::Config;
+    use context;
+
+    macro_rules! create_test_prompt {
+        ($p:ident) => {
+            let context = context::default();
+            let editor = editor::create(context.clone());
+            let mut $p = Prompt { context, editor };
+        };
+    }
+
+    macro_rules! create_test_prompt_with_config {
+        ($p:ident, $cfg:expr) => {
+            let context = context::default();
+            context.borrow_mut().config = $cfg;
+            let editor = editor::create(context.clone());
+            let mut $p = Prompt { context, editor };
+        };
+    }
+
+    #[test]
+    fn parse_command_empty() {
+        create_test_prompt!(prompt);
+        let cmd = prompt.parse_command(String::new());
+        assert!(cmd.is_err());
+        assert!(cmd.err().unwrap().is::<NoCommandError>());
+    }
+
+    #[test]
+    /// They should yield the same in this case.
+    fn parse_command_calls_command_parse() {
+        create_test_prompt!(prompt);
+
+        let cmd = prompt.parse_command("ls -l".to_string());
+        assert!(cmd.is_ok());
+        assert!(
+            cmd.unwrap()
+                .as_any()
+                .downcast_ref::<GeneralCommand>()
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn parse_command_auto_cd() {
+        // auto-cd is enabled per default in Config.
+        create_test_prompt!(prompt);
+        let cmd = prompt.parse_command(".".to_string());
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let cd_cmd = cmd.as_any().downcast_ref::<CdCommand>().unwrap();
+        assert_eq!(cd_cmd.path, ".");
+    }
+
+    #[test]
+    fn parse_command_env_vars_replaced() {
+        create_test_prompt!(prompt);
+        prompt
+            .context
+            .borrow_mut()
+            .env
+            .insert("HELLO".to_string(), "WORLD".to_string());
+        let cmd = prompt.parse_command("echo $HELLO".to_string());
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+        assert_eq!(general_cmd.args, vec!["WORLD".to_string()]);
+    }
+
+    #[test]
+    fn parse_command_alias_substituted() {
+        let mut config = Config::default();
+        config.aliases.insert("l".to_string(), "ls -l".to_string());
+        create_test_prompt_with_config!(prompt, config);
+
+        let cmd = prompt.parse_command("l -F".to_string());
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "ls".to_string());
+        assert_eq!(general_cmd.args, vec!["-l".to_string(), "-F".to_string()]);
+    }
+}
