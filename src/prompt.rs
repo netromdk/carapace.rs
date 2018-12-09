@@ -3,6 +3,7 @@ use context::Context;
 use editor::{self, EditorHelper};
 use util;
 
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::error::Error;
 use std::fmt;
@@ -26,12 +27,23 @@ pub struct Prompt {
 
     /// Readline interface.
     pub editor: Editor<EditorHelper>,
+
+    /// Environment values to be restored before next command due to inline env vars.
+    restore_env: HashMap<String, String>,
+
+    /// Environment keys to be deleted before next command due to inline env vars.
+    delete_env: HashSet<String>,
 }
 
 impl Prompt {
     pub fn new(context: Context) -> Prompt {
         let editor = editor::create(&context.clone());
-        let mut p = Prompt { context, editor };
+        let mut p = Prompt {
+            context,
+            editor,
+            restore_env: HashMap::new(),
+            delete_env: HashSet::new(),
+        };
         p.load_history();
         p.load_env();
         p
@@ -59,6 +71,7 @@ impl Prompt {
 
     /// Parses command from input.
     pub fn parse_command(&mut self, input: &str) -> PromptResult {
+        self.restore_env();
         self.editor.add_history_entry(input);
 
         let mut input = input.trim().to_string();
@@ -74,6 +87,36 @@ impl Prompt {
         input = util::replace_vars(&input, &self.context.borrow().env);
 
         let mut values: Vec<String> = input.split_whitespace().map(|x| x.to_string()).collect();
+
+        // Detect any temporary, inline env vars, like "A=42 ./prog" etc. Also replace any use of
+        // the inline env vars in the current input. And remember which env vars to remove and old
+        // values to replace them with for next command.
+        let mut abort_inline = false;
+        values = values
+            .into_iter()
+            .filter_map(|v| {
+                let mut ctx = self.context.borrow_mut();
+                if abort_inline {
+                    return Some(util::replace_vars(&v, &ctx.env));
+                }
+                if let Some(pos) = v.find('=') {
+                    let (k, val) = (v[..pos].to_string(), v[pos + 1..].to_string());
+                    if ctx.env.contains_key(&k) {
+                        self.restore_env.insert(k.clone(), ctx.env[&k].clone());
+                    } else {
+                        self.delete_env.insert(k.clone());
+                    }
+                    ctx.env.insert(k, val);
+                    None
+                } else {
+                    // Stop looking for inline env vars at first command so env to be permanently
+                    // exported aren't replaced. For instance, "B=2" must still be exported in "A=1
+                    // export B=2".
+                    abort_inline = true;
+                    Some(util::replace_vars(&v, &ctx.env))
+                }
+            })
+            .collect();
 
         // Check if program is an alias, and substitute in values.
         if self
@@ -125,6 +168,21 @@ impl Prompt {
         }
 
         Ok(command::parse(program, args))
+    }
+
+    /// Check if any env vars must be replaced/deleted due to inline env vars from last command.
+    fn restore_env(&mut self) {
+        let mut ctx = self.context.borrow_mut();
+
+        for k in &self.delete_env {
+            ctx.env.remove(k.as_str());
+        }
+        self.delete_env.clear();
+
+        for (k, v) in &self.restore_env {
+            ctx.env.insert(k.clone(), v.clone());
+        }
+        self.restore_env.clear();
     }
 
     /// Yields the textual prompt with term colors.
@@ -253,7 +311,12 @@ mod tests {
         ($p:ident) => {
             let context = context::default();
             let editor = editor::create(&context.clone());
-            let mut $p = Prompt { context, editor };
+            let mut $p = Prompt {
+                context,
+                editor,
+                restore_env: HashMap::new(),
+                delete_env: HashSet::new(),
+            };
         };
     }
 
@@ -262,7 +325,12 @@ mod tests {
             let context = context::default();
             context.borrow_mut().config = $cfg;
             let editor = editor::create(&context.clone());
-            let mut $p = Prompt { context, editor };
+            let mut $p = Prompt {
+                context,
+                editor,
+                restore_env: HashMap::new(),
+                delete_env: HashSet::new(),
+            };
         };
     }
 
@@ -330,5 +398,95 @@ mod tests {
         let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
         assert_eq!(general_cmd.program, "ls".to_string());
         assert_eq!(general_cmd.args, vec!["-l".to_string(), "-F".to_string()]);
+    }
+
+    #[test]
+    fn parse_command_inline_env_vars() {
+        create_test_prompt!(prompt);
+
+        let cmd = prompt.parse_command("A=1 echo test");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+        assert_eq!(general_cmd.args, vec!["test".to_string()]);
+
+        assert!(prompt.delete_env.contains("A"));
+    }
+
+    #[test]
+    fn parse_command_inline_env_vars_replaced_for_invocation() {
+        create_test_prompt!(prompt);
+
+        let cmd = prompt.parse_command("A=1 echo $A");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+        assert_eq!(general_cmd.args, vec!["1".to_string()]);
+
+        assert!(prompt.delete_env.contains("A"));
+    }
+
+    #[test]
+    fn parse_command_inline_env_vars_replaces_session_env() {
+        create_test_prompt!(prompt);
+        prompt
+            .context
+            .borrow_mut()
+            .env
+            .insert("A".to_string(), "42".to_string());
+
+        let cmd = prompt.parse_command("A=1 echo $A");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+
+        // $A is replaced with "42" before the inline replacement since it already exists in the
+        // environment.
+        assert_eq!(general_cmd.args, vec!["42".to_string()]);
+
+        assert!(!prompt.delete_env.contains("A"));
+        assert!(prompt.restore_env.contains_key("A"));
+        assert_eq!(prompt.restore_env.get("A"), Some(&"42".to_string()));
+        assert_eq!(prompt.context.borrow().env.get("A"), Some(&"1".to_string()));
+    }
+
+    #[test]
+    fn parse_command_inline_env_vars_restored_before_next_command() {
+        create_test_prompt!(prompt);
+        prompt
+            .context
+            .borrow_mut()
+            .env
+            .insert("A".to_string(), "42".to_string());
+
+        let cmd = prompt.parse_command("A=1 echo $A");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+
+        // $A is replaced with "42" before the inline replacement since it already exists in the
+        // environment.
+        assert_eq!(general_cmd.args, vec!["42".to_string()]);
+
+        assert!(!prompt.delete_env.contains("A"));
+        assert!(prompt.restore_env.contains_key("A"));
+        assert_eq!(prompt.restore_env.get("A"), Some(&"42".to_string()));
+        assert_eq!(prompt.context.borrow().env.get("A"), Some(&"1".to_string()));
+
+        // Attempt next command to make sure env is cleaned up.
+        let _cmd = prompt.parse_command("");
+
+        assert!(!prompt.restore_env.contains_key("A"));
+        let ctx = prompt.context.borrow();
+        assert!(ctx.env.contains_key("A"));
+        assert_eq!(ctx.env.get("A"), Some(&"42".to_string()));
     }
 }
