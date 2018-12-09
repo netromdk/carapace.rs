@@ -63,7 +63,10 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
         return 1;
     }
 
-    let context = context::new(arg_matches.value_of("config"));
+    let context = context::new(
+        arg_matches.occurrences_of("verbose"),
+        arg_matches.value_of("config"),
+    );
     let mut prompt = Prompt::new(context);
 
     // If -c <command> is specified then run command and exit.

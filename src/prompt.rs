@@ -66,6 +66,10 @@ impl Prompt {
             return Err(Box::new(NoCommandError));
         }
 
+        if self.context.borrow().verbose > 0 {
+            println!("{}", input);
+        }
+
         // Replace all `$VAR` and `${VAR}` occurrences with values from environment.
         input = util::replace_vars(&input, &self.context.borrow().env);
 

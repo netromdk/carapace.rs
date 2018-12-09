@@ -7,8 +7,8 @@ use config::Config;
 
 pub type Context = Rc<RefCell<ContextData>>;
 
-pub fn new(config_path: Option<&str>) -> Context {
-    Rc::new(RefCell::new(ContextData::new(config_path)))
+pub fn new(verbose: u64, config_path: Option<&str>) -> Context {
+    Rc::new(RefCell::new(ContextData::new(verbose, config_path)))
 }
 
 pub fn default() -> Context {
@@ -16,6 +16,7 @@ pub fn default() -> Context {
 }
 
 pub struct ContextData {
+    pub verbose: u64,
     pub config: Config,
 
     /// Environment passed to newly spawned processes.
@@ -23,8 +24,9 @@ pub struct ContextData {
 }
 
 impl ContextData {
-    pub fn new(config_path: Option<&str>) -> ContextData {
+    pub fn new(verbose: u64, config_path: Option<&str>) -> ContextData {
         ContextData {
+            verbose,
             config: Config::new(config_path),
             env: env::vars().collect(),
         }
@@ -34,6 +36,7 @@ impl ContextData {
 impl Default for ContextData {
     fn default() -> ContextData {
         ContextData {
+            verbose: 0,
             config: Config::default(),
             env: HashMap::new(),
         }

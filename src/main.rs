@@ -24,7 +24,7 @@ fn main() {
                 .short("s")
                 .long("stdin")
                 .help("Commands read from standard input.")
-                .conflicts_with("comand"),
+                .conflicts_with("command"),
         ).arg(
             Arg::with_name("config")
                 .long("config")
@@ -33,6 +33,16 @@ fn main() {
                      The default config will be written to file if it doesn't exist.",
                 ).value_name("config")
                 .takes_value(true),
+        ).arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .long("verbose")
+                .multiple(true)
+                .help(
+                    "Sets verbosity level. Can be used multiple times, like '-v -v -v' or '-vvv' \
+                     for a verbosity level of 3. With >=1 the shell prints input lines as they \
+                     are read.",
+                ),
         ).get_matches();
 
     process::exit(carapace::repl(&matches));
