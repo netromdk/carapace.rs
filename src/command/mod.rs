@@ -66,7 +66,7 @@ pub fn parse(program: String, args: Vec<String>) -> CommandResult {
         "export" | "set" => Ok(Box::new(ExportCommand::new(args))),
         "history" | "hist" | "h" => Ok(Box::new(HistoryCommand::new(args))),
         "quit" => Ok(Box::new(QuitCommand {})),
-        "unset" => Ok(Box::new(UnsetCommand::new(args)?)),
+        "unset" => Ok(Box::new(UnsetCommand::new(args))),
         _ => Ok(Box::new(GeneralCommand::new(program, args))),
     }
 }
