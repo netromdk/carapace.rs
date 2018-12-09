@@ -3,9 +3,13 @@ use super::*;
 use std::env;
 use std::path::Path;
 
+use clap::{App, AppSettings, Arg};
+
 /// Cd command changes directory to defined path.
 pub struct CdCommand {
     pub path: String,
+    args: Vec<String>,
+    app: App<'static, 'static>,
 }
 
 impl CdCommand {
@@ -13,12 +17,19 @@ impl CdCommand {
     /// the first argument. *Note:* it is expected that all "~" have already been replaced. Only the
     /// placeholder "~" used with no arguments is kept to replace directly in `execute()`.
     pub fn new(args: Vec<String>) -> CdCommand {
-        let path = if args.len() > 0 {
-            args[0].clone()
-        } else {
-            String::from("~")
-        };
-        CdCommand { path }
+        let mut app = App::new("cd")
+            .about("Change directory.")
+            .setting(AppSettings::NoBinaryName)
+            .setting(AppSettings::DisableVersion)
+            .arg(Arg::with_name("directory").index(1).default_value("~"));
+
+        let mut path = "~".to_string();
+        let matches = app.get_matches_from_safe_borrow(&args);
+        if matches.is_ok() {
+            path = matches.unwrap().value_of("directory").unwrap().to_string();
+        }
+
+        CdCommand { args, path, app }
     }
 
     fn set_cwd(&self, dir: &Path, prompt: &mut Prompt) {
@@ -42,6 +53,12 @@ impl CdCommand {
 
 impl Command for CdCommand {
     fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
+        let matches = self.app.get_matches_from_safe_borrow(&self.args);
+        if matches.is_err() {
+            println!("{}", matches.unwrap_err());
+            return Ok(false);
+        }
+
         if self.path == "~" {
             let home_dir = dirs::home_dir().unwrap_or_default();
             self.set_cwd(&home_dir, prompt);
