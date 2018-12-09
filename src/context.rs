@@ -7,8 +7,8 @@ use config::Config;
 
 pub type Context = Rc<RefCell<ContextData>>;
 
-pub fn new() -> Context {
-    Rc::new(RefCell::new(ContextData::new()))
+pub fn new(config_path: Option<&str>) -> Context {
+    Rc::new(RefCell::new(ContextData::new(config_path)))
 }
 
 pub fn default() -> Context {
@@ -23,9 +23,9 @@ pub struct ContextData {
 }
 
 impl ContextData {
-    pub fn new() -> ContextData {
+    pub fn new(config_path: Option<&str>) -> ContextData {
         ContextData {
-            config: Config::new(),
+            config: Config::new(config_path),
             env: env::vars().collect(),
         }
     }

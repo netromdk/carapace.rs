@@ -4,6 +4,7 @@ use rustyline::{CompletionType, EditMode};
 
 use std::collections::HashMap;
 use std::fs;
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct Config {
@@ -16,21 +17,25 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new() -> Config {
+    pub fn new(path: Option<&str>) -> Config {
         let mut c = Config::default();
-        c.load();
+        c.load(path);
         c
     }
 
-    pub fn load(&mut self) {
-        let path = dirs::home_dir()
-            .unwrap()
-            .join(".carapace")
-            .join("config.json");
+    pub fn load(&mut self, path: Option<&str>) {
+        let path = if path.is_some() {
+            PathBuf::from(path.unwrap())
+        } else {
+            dirs::home_dir()
+                .unwrap()
+                .join(".carapace")
+                .join("config.json")
+        };
 
         // If config does not exist then save defaults to disk.
         if !path.exists() {
-            self.save();
+            self.save(&path);
             return;
         }
 
@@ -43,12 +48,8 @@ impl Config {
         }
     }
 
-    pub fn save(&self) {
+    pub fn save(&self, path: &PathBuf) {
         let output = self.encode();
-        let path = dirs::home_dir()
-            .unwrap()
-            .join(".carapace")
-            .join("config.json");
         if let Err(err) = fs::write(&path, output) {
             println!("Could not write config to: {}\n{}", path.display(), err);
         }
