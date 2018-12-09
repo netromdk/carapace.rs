@@ -1,6 +1,4 @@
 use std::any::Any;
-use std::error::Error;
-use std::fmt;
 use std::process;
 
 use super::prompt::{EofError, Prompt};
@@ -35,25 +33,6 @@ pub trait Command {
     /// Enable downcasting from trait object, like `dyn Command`, to concrete type, like
     /// `ExitCommand`.
     fn as_any(&self) -> &dyn Any;
-}
-
-#[derive(Debug)]
-struct CommandError {
-    error: &'static str,
-}
-
-impl CommandError {
-    fn new(error: &'static str) -> CommandError {
-        CommandError { error }
-    }
-}
-
-impl Error for CommandError {}
-
-impl fmt::Display for CommandError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.error)
-    }
 }
 
 pub type CommandResult = Result<Box<dyn Command>, Box<dyn Error>>;
