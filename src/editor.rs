@@ -8,7 +8,7 @@ use context::Context;
 use util;
 
 /// Creates `Editor` instance with proper config and completion.
-pub fn create(context: Context) -> Editor<EditorHelper> {
+pub fn create(context: &Context) -> Editor<EditorHelper> {
     let config = &context.borrow().config;
     let mut editor = Editor::with_config(
         Config::builder()
@@ -42,13 +42,14 @@ impl EditorHelper {
     fn builtin_command_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
         let mut builtins: Vec<String> = vec![
             "cd", "exit", "export", "h", "hist", "history", "quit", "set", "unset",
-        ].into_iter()
+        ]
+        .into_iter()
         .map(|x| x.to_string())
         .collect();
 
         // Add aliases, if any.
         let config = &self.context.borrow().config;
-        for (k, _) in &config.aliases {
+        for k in config.aliases.keys() {
             builtins.push(k.clone());
         }
 
@@ -79,18 +80,18 @@ impl EditorHelper {
             }
         }
 
-        return candidates;
+        candidates
     }
 
     fn env_var_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
         let mut candidates = Vec::new();
 
         let word = util::partial_env_var_at_pos(pos, line);
-        if word.len() == 0 {
+        if word.is_empty() {
             return candidates;
         }
 
-        for (k, _) in &self.context.borrow().env {
+        for k in self.context.borrow().env.keys() {
             let lookfor = format!("${}", k);
             let lookfor2 = format!("${{{}", k);
 
@@ -102,7 +103,7 @@ impl EditorHelper {
                 });
             }
             // Look for bracketed env var with no ending bracket: ${VAR
-            else if lookfor2.starts_with(&word) && !word.ends_with("}") {
+            else if lookfor2.starts_with(&word) && !word.ends_with('}') {
                 candidates.push(Pair {
                     display: lookfor2.clone() + "}",
                     replacement: lookfor2[word.len()..].to_string() + "}",
@@ -124,14 +125,14 @@ impl Completer for EditorHelper {
 
             // Only return candidates if more than none, otherwise default to file completion so it
             // can be done on the first word also.
-            if candidates.len() > 0 {
+            if !candidates.is_empty() {
                 return Ok((pos, candidates));
             }
         }
 
         // Do environment variable completion.
         let candidates = self.env_var_completer(line, pos);
-        if candidates.len() > 0 {
+        if !candidates.is_empty() {
             return Ok((pos, candidates));
         }
 
@@ -160,7 +161,7 @@ mod tests {
     macro_rules! create_test_editor {
         ($e:ident) => {
             let ctx = context::default();
-            let $e = create(ctx);
+            let $e = create(&ctx);
         };
     }
 
@@ -168,7 +169,7 @@ mod tests {
         ($e:ident; $map:expr) => {
             let ctx = context::default();
             ctx.borrow_mut().env = $map;
-            let $e = create(ctx);
+            let $e = create(&ctx);
         };
     }
 

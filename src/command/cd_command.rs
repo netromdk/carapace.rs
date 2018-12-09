@@ -35,7 +35,7 @@ impl CdCommand {
     fn set_cwd(&self, dir: &Path, prompt: &mut Prompt) {
         let fallback = "/";
         let oldpwd = env::current_dir()
-            .unwrap_or(Path::new(fallback).to_path_buf())
+            .unwrap_or_else(|_| Path::new(fallback).to_path_buf())
             .to_str()
             .unwrap_or(fallback)
             .to_string();

@@ -15,7 +15,7 @@ use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
 /// Fallback textual prompt if term formatting fails.
-const SAFE_PROMPT: &'static str = "carapace % ";
+const SAFE_PROMPT: &str = "carapace % ";
 
 pub type PromptResult = Result<Box<dyn Command>, Box<dyn Error>>;
 
@@ -30,7 +30,7 @@ pub struct Prompt {
 
 impl Prompt {
     pub fn new(context: Context) -> Prompt {
-        let editor = editor::create(context.clone());
+        let editor = editor::create(&context.clone());
         let mut p = Prompt { context, editor };
         p.load_history();
         p.load_env();
@@ -43,7 +43,7 @@ impl Prompt {
 
         let input = self.editor.readline(prompt_txt.as_ref());
         match input {
-            Ok(line) => self.parse_command(line),
+            Ok(line) => self.parse_command(&line),
             Err(ReadlineError::Interrupted) => {
                 // TODO: Unhandled for now!
                 println!("^C");
@@ -58,11 +58,11 @@ impl Prompt {
     }
 
     /// Parses command from input.
-    pub fn parse_command(&mut self, input: String) -> PromptResult {
-        self.editor.add_history_entry(input.as_ref());
+    pub fn parse_command(&mut self, input: &str) -> PromptResult {
+        self.editor.add_history_entry(input);
 
         let mut input = input.trim().to_string();
-        if input.len() == 0 {
+        if input.is_empty() {
             return Err(Box::new(NoCommandError));
         }
 
@@ -97,7 +97,7 @@ impl Prompt {
         values = values
             .into_iter()
             .map(|mut x| {
-                if !x.starts_with("~") {
+                if !x.starts_with('~') {
                     x
                 } else {
                     let cnt = if x.starts_with("~/") { 2 } else { 1 };
@@ -189,7 +189,7 @@ impl Prompt {
 
     fn load_history(&mut self) {
         let path = dirs::home_dir().unwrap().join(".carapace").join("history");
-        if let Err(_) = self.editor.load_history(&path) {
+        if self.editor.load_history(&path).is_err() {
             println!("No history loaded.");
         }
     }
@@ -225,7 +225,7 @@ impl Error for EofError {}
 impl fmt::Display for EofError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Write newline on ^D/EOF so next prompt doesn't appear on same line.
-        writeln!(f, "")
+        writeln!(f)
     }
 }
 
@@ -252,7 +252,7 @@ mod tests {
     macro_rules! create_test_prompt {
         ($p:ident) => {
             let context = context::default();
-            let editor = editor::create(context.clone());
+            let editor = editor::create(&context.clone());
             let mut $p = Prompt { context, editor };
         };
     }
@@ -261,7 +261,7 @@ mod tests {
         ($p:ident, $cfg:expr) => {
             let context = context::default();
             context.borrow_mut().config = $cfg;
-            let editor = editor::create(context.clone());
+            let editor = editor::create(&context.clone());
             let mut $p = Prompt { context, editor };
         };
     }
@@ -269,7 +269,7 @@ mod tests {
     #[test]
     fn parse_command_empty() {
         create_test_prompt!(prompt);
-        let cmd = prompt.parse_command(String::new());
+        let cmd = prompt.parse_command(&String::new());
         assert!(cmd.is_err());
         assert!(cmd.err().unwrap().is::<NoCommandError>());
     }
@@ -279,7 +279,7 @@ mod tests {
     fn parse_command_calls_command_parse() {
         create_test_prompt!(prompt);
 
-        let cmd = prompt.parse_command("ls -l".to_string());
+        let cmd = prompt.parse_command("ls -l");
         assert!(cmd.is_ok());
         assert!(cmd
             .unwrap()
@@ -292,7 +292,7 @@ mod tests {
     fn parse_command_auto_cd() {
         // auto-cd is enabled per default in Config.
         create_test_prompt!(prompt);
-        let cmd = prompt.parse_command(".".to_string());
+        let cmd = prompt.parse_command(".");
         assert!(cmd.is_ok());
 
         let cmd = cmd.unwrap();
@@ -308,7 +308,7 @@ mod tests {
             .borrow_mut()
             .env
             .insert("HELLO".to_string(), "WORLD".to_string());
-        let cmd = prompt.parse_command("echo $HELLO".to_string());
+        let cmd = prompt.parse_command("echo $HELLO");
         assert!(cmd.is_ok());
 
         let cmd = cmd.unwrap();
@@ -323,7 +323,7 @@ mod tests {
         config.aliases.insert("l".to_string(), "ls -l".to_string());
         create_test_prompt_with_config!(prompt, config);
 
-        let cmd = prompt.parse_command("l -F".to_string());
+        let cmd = prompt.parse_command("l -F");
         assert!(cmd.is_ok());
 
         let cmd = cmd.unwrap();

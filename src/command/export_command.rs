@@ -15,7 +15,8 @@ impl ExportCommand {
             app: App::new("export")
                 .about(
                     "List or export new environment variables with values.\n\nCommand alias: set",
-                ).setting(AppSettings::NoBinaryName)
+                )
+                .setting(AppSettings::NoBinaryName)
                 .setting(AppSettings::DisableVersion)
                 .arg(
                     Arg::with_name("vars").multiple(true).help(
@@ -34,7 +35,7 @@ impl Command for ExportCommand {
             return Ok(false);
         }
 
-        if self.args.len() == 0 {
+        if self.args.is_empty() {
             let ctx = prompt.context.borrow();
             let mut keys: Vec<&String> = ctx.env.keys().peekable().collect();
             keys.sort();

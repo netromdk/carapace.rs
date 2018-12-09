@@ -16,9 +16,10 @@ pub fn in_first_word(pos: usize, text: &str) -> bool {
     if let Some(wpos) = text.find(char::is_whitespace) {
         return pos < wpos;
     }
-    return true;
+    true
 }
 
+// TODO: -> Option<String>
 pub fn word_at_pos(pos: usize, text: &str) -> String {
     assert!(pos <= text.len());
     for cap in WORD_REGEX.captures_iter(text) {
@@ -30,6 +31,7 @@ pub fn word_at_pos(pos: usize, text: &str) -> String {
     "".to_string()
 }
 
+// TODO: -> Option<String>
 pub fn env_var_at_pos(pos: usize, text: &str) -> String {
     assert!(pos <= text.len());
     for cap in BRACKET_ENV_VAR_REGEX.captures_iter(text) {
@@ -48,6 +50,7 @@ pub fn env_var_at_pos(pos: usize, text: &str) -> String {
     "".to_string()
 }
 
+// TODO: -> Option<String>
 pub fn partial_env_var_at_pos(pos: usize, text: &str) -> String {
     assert!(pos <= text.len());
     for cap in PARTIAL_BRACKET_ENV_VAR_REGEX.captures_iter(text) {
@@ -66,7 +69,9 @@ pub fn partial_env_var_at_pos(pos: usize, text: &str) -> String {
     "".to_string()
 }
 
-pub fn hash_map_to_json(map: &HashMap<String, String>) -> JsonValue {
+pub fn hash_map_to_json<S: ::std::hash::BuildHasher>(
+    map: &HashMap<String, String, S>,
+) -> JsonValue {
     let mut val = JsonValue::new_object();
     for (key, value) in map {
         val[key] = JsonValue::from(value.clone());
@@ -85,8 +90,11 @@ pub fn json_obj_to_hash_map(obj: &JsonValue) -> HashMap<String, String> {
     map
 }
 
-pub fn replace_vars(data: &String, map: &HashMap<String, String>) -> String {
-    let mut res = data.clone();
+pub fn replace_vars<S: ::std::hash::BuildHasher>(
+    data: &str,
+    map: &HashMap<String, String, S>,
+) -> String {
+    let mut res = data.to_string();
     for (k, v) in map {
         // Bracketed version always replaces.
         res = res.replace(&format!("${{{}}}", k), v);
@@ -103,7 +111,8 @@ pub fn replace_vars(data: &String, map: &HashMap<String, String>) -> String {
                 } else {
                     m
                 }
-            }).into_owned();
+            })
+            .into_owned();
     }
     res
 }

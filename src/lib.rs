@@ -71,7 +71,7 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
 
     // If -c <command> is specified then run command and exit.
     if let Some(command) = arg_matches.value_of("command") {
-        let cmd = prompt.parse_command(command.to_string());
+        let cmd = prompt.parse_command(command);
         if let Some(code) = command::execute(cmd, &mut prompt) {
             return code;
         }
@@ -85,7 +85,7 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
                 return 1;
             }
 
-            let cmd = prompt.parse_command(line.unwrap());
+            let cmd = prompt.parse_command(&line.unwrap());
             if let Some(code) = command::execute(cmd, &mut prompt) {
                 return code;
             }
