@@ -1,4 +1,4 @@
-use command::{self, CommandResult};
+use command::{self, Command};
 use context::Context;
 use editor::{self, EditorHelper};
 use util;
@@ -16,6 +16,8 @@ use rustyline::Editor;
 
 /// Fallback textual prompt if term formatting fails.
 const SAFE_PROMPT: &'static str = "carapace % ";
+
+pub type PromptResult = Result<Box<dyn Command>, Box<dyn Error>>;
 
 /// Controls showing the prompt and yielding lines from stdin.
 pub struct Prompt {
@@ -36,7 +38,7 @@ impl Prompt {
     }
 
     /// Shows prompt and reads command and arguments from stdin.
-    pub fn show_parse_command(&mut self) -> CommandResult {
+    pub fn show_parse_command(&mut self) -> PromptResult {
         let prompt_txt = self.prompt();
 
         let input = self.editor.readline(prompt_txt.as_ref());
@@ -56,7 +58,7 @@ impl Prompt {
     }
 
     /// Parses command from input.
-    pub fn parse_command(&mut self, input: String) -> CommandResult {
+    pub fn parse_command(&mut self, input: String) -> PromptResult {
         self.editor.add_history_entry(input.as_ref());
 
         let mut input = input.trim().to_string();
@@ -117,7 +119,7 @@ impl Prompt {
             program = "cd".to_string();
         }
 
-        command::parse(program, args)
+        Ok(command::parse(program, args))
     }
 
     /// Yields the textual prompt with term colors.
