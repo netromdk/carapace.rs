@@ -17,18 +17,15 @@ fn main() {
                 .long("command")
                 .value_name("CMD")
                 .help("Commands read from string.")
-                .takes_value(true),
+                .takes_value(true)
+                .conflicts_with("stdin"),
         ).arg(
             Arg::with_name("stdin")
                 .short("s")
                 .long("stdin")
-                .help("Commands read from standard input."),
+                .help("Commands read from standard input.")
+                .conflicts_with("comand"),
         ).get_matches();
-
-    if matches.is_present("command") && matches.is_present("stdin") {
-        println!("--command and --stdin cannot be used together!");
-        process::exit(1);
-    }
 
     process::exit(carapace::repl(&matches));
 }
