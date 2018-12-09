@@ -17,17 +17,26 @@ impl ExitCommand {
             .setting(AppSettings::DisableVersion)
             .arg(
                 Arg::with_name("code")
+                    .help("Exit code to return to parent program.")
                     .index(1)
                     .default_value("0")
-                    .help("Exit code to return to parent program."),
+                    .validator(|v: String| -> Result<(), String> {
+                        if v.parse::<i32>().is_ok() {
+                            return Ok(());
+                        }
+                        Err(String::from("Exit code must be an integer!"))
+                    }),
             );
 
         let mut code = 0;
         let matches = app.get_matches_from_safe_borrow(&args);
         if matches.is_ok() {
-            if let Ok(c) = matches.unwrap().value_of("code").unwrap().parse::<i32>() {
-                code = c;
-            }
+            code = matches
+                .unwrap()
+                .value_of("code")
+                .unwrap()
+                .parse::<i32>()
+                .unwrap();
         }
 
         ExitCommand { code, args, app }
