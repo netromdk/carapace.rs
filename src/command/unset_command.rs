@@ -15,7 +15,7 @@ impl UnsetCommand {
 }
 
 impl Command for UnsetCommand {
-    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
+    fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         for var in &self.vars {
             prompt.context.borrow_mut().env.remove(var);
         }

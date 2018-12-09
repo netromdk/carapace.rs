@@ -20,7 +20,7 @@ impl ExitCommand {
 }
 
 impl Command for ExitCommand {
-    fn execute(&self, _prompt: &mut Prompt) -> Result<bool, i32> {
+    fn execute(&mut self, _prompt: &mut Prompt) -> Result<bool, i32> {
         Err(self.code)
     }
 

@@ -15,7 +15,7 @@ impl GeneralCommand {
 }
 
 impl Command for GeneralCommand {
-    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
+    fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         let mut ctx = prompt.context.borrow_mut();
         let output = process::Command::new(&self.program)
             .args(&self.args)

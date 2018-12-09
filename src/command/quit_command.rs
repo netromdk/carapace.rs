@@ -4,7 +4,7 @@ use super::*;
 pub struct QuitCommand;
 
 impl Command for QuitCommand {
-    fn execute(&self, _prompt: &mut Prompt) -> Result<bool, i32> {
+    fn execute(&mut self, _prompt: &mut Prompt) -> Result<bool, i32> {
         Err(0)
     }
 

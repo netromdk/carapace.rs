@@ -30,7 +30,7 @@ use self::export_command::ExportCommand;
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
     /// and `Err(exit_code)` on "exit" or "quit".
-    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32>;
+    fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32>;
 
     /// Enable downcasting from trait object, like `dyn Command`, to concrete type, like
     /// `ExitCommand`.
@@ -74,7 +74,7 @@ pub fn parse(program: String, args: Vec<String>) -> CommandResult {
 /// Execute command and yield optional exit code value.
 pub fn execute(cmd: CommandResult, prompt: &mut Prompt) -> Option<i32> {
     match cmd {
-        Ok(cmd) => match cmd.execute(prompt) {
+        Ok(mut cmd) => match cmd.execute(prompt) {
             Ok(_) => None,
             Err(code) => Some(code),
         },

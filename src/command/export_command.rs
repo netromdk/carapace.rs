@@ -12,7 +12,7 @@ impl ExportCommand {
 }
 
 impl Command for ExportCommand {
-    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
+    fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         if self.vars.len() == 0 {
             let ctx = prompt.context.borrow();
             let mut keys: Vec<&String> = ctx.env.keys().peekable().collect();

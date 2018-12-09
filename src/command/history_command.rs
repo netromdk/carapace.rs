@@ -14,7 +14,6 @@ impl HistoryCommand {
 }
 
 impl Command for HistoryCommand {
-    fn execute(&self, prompt: &mut Prompt) -> Result<bool, i32> {
         let matches = App::new("history")
             .about("When no options are specified, all history items will be listed.")
             .setting(AppSettings::NoBinaryName)
@@ -31,6 +30,7 @@ impl Command for HistoryCommand {
                     .help("Writes history to disk."),
             ).get_matches_from_safe(&self.vars);
 
+    fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         if matches.is_err() {
             println!("{}", matches.unwrap_err());
             return Ok(false);
