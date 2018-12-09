@@ -62,7 +62,7 @@ pub type CommandResult = Result<Box<dyn Command>, Box<dyn Error>>;
 pub fn parse(program: String, args: Vec<String>) -> CommandResult {
     match program.as_ref() {
         "cd" => Ok(Box::new(CdCommand::new(args))),
-        "exit" => Ok(Box::new(ExitCommand::new(args)?)),
+        "exit" => Ok(Box::new(ExitCommand::new(args))),
         "export" | "set" => Ok(Box::new(ExportCommand::new(args))),
         "history" | "hist" | "h" => Ok(Box::new(HistoryCommand::new(args))),
         "quit" => Ok(Box::new(QuitCommand {})),
