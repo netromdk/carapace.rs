@@ -1,3 +1,4 @@
+use glob::glob;
 use json::JsonValue;
 use regex::{Captures, Regex};
 
@@ -113,6 +114,17 @@ pub fn replace_vars<S: ::std::hash::BuildHasher>(
                 }
             })
             .into_owned();
+    }
+    res
+}
+
+pub fn expand_glob(input: &str) -> Vec<String> {
+    let mut res = Vec::new();
+    for path in glob(input).unwrap().filter_map(Result::ok) {
+        res.push(path.to_str().unwrap().to_string());
+    }
+    if res.is_empty() {
+        res.push(input.to_string());
     }
     res
 }

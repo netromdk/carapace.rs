@@ -154,13 +154,23 @@ impl Prompt {
             })
             .collect();
 
-        let mut program = values[0].clone();
-        let mut args: Vec<String> = values.drain(1..).collect();
+        // Replace all file globs, like "C*" -> ["Cargo.lock", "Cargo.toml"].
+        let mut expanded_values = Vec::new();
+        for v in &values {
+            if v.contains('*') {
+                expanded_values.append(&mut util::expand_glob(v));
+            } else {
+                expanded_values.push(v.to_string());
+            }
+        }
+
+        let mut program = expanded_values[0].clone();
+        let mut args: Vec<String> = expanded_values.drain(1..).collect();
 
         // If input is an existing folder, and auto_cd is enabled, then set "cd" as the
         // program.
         if self.context.borrow().config.auto_cd
-            && values.len() == 1
+            && expanded_values.len() == 1
             && Path::new(&values[0]).is_dir()
         {
             args = vec![program];
