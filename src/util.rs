@@ -107,9 +107,9 @@ pub fn replace_vars<S: ::std::hash::BuildHasher>(
             .replace_all(&res, |caps: &Captures| {
                 let m = caps.get(0).unwrap().as_str();
                 if m == lookfor {
-                    v
+                    v.to_string()
                 } else {
-                    m
+                    m.to_string()
                 }
             })
             .into_owned();

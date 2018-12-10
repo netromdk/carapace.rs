@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::env;
 use std::rc::Rc;
 
-use config::Config;
+use crate::config::Config;
 
 pub type Context = Rc<RefCell<ContextData>>;
 

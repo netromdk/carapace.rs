@@ -1,7 +1,7 @@
-use command::{self, Command};
-use context::Context;
-use editor::{self, EditorHelper};
-use util;
+use crate::command::{self, Command};
+use crate::context::Context;
+use crate::editor::{self, EditorHelper};
+use crate::util;
 
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -302,10 +302,10 @@ impl fmt::Display for NoCommandError {
 mod tests {
     use super::*;
 
-    use command::cd_command::CdCommand;
-    use command::general_command::GeneralCommand;
-    use config::Config;
-    use context;
+    use crate::command::cd_command::CdCommand;
+    use crate::command::general_command::GeneralCommand;
+    use crate::config::Config;
+    use crate::context;
 
     macro_rules! create_test_prompt {
         ($p:ident) => {

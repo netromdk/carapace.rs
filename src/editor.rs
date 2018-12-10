@@ -4,8 +4,8 @@ use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::{Config, Editor, Helper};
 
-use context::Context;
-use util;
+use crate::context::Context;
+use crate::util;
 
 /// Creates `Editor` instance with proper config and completion.
 pub fn create(context: &Context) -> Editor<EditorHelper> {
@@ -156,7 +156,7 @@ mod tests {
 
     use std::collections::HashMap;
 
-    use context;
+    use crate::context;
 
     macro_rules! create_test_editor {
         ($e:ident) => {

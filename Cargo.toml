@@ -2,6 +2,7 @@
 name = "carapace"
 version = "0.1.0"
 authors = ["Morten Kristensen <msk@nullpointer.dk>"]
+edition = "2018"
 
 [dependencies]
 dirs = "1.0.4"

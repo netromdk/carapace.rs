@@ -46,7 +46,7 @@ pub mod editor;
 pub mod prompt;
 pub mod util;
 
-use prompt::Prompt;
+use crate::prompt::Prompt;
 
 use clap::ArgMatches;
 
