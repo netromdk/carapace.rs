@@ -6,6 +6,7 @@ use std::collections::HashMap;
 
 lazy_static! {
     static ref WORD_REGEX: Regex = Regex::new(r"(\w+)").unwrap();
+    static ref GLOB_REGEX: Regex = Regex::new(r"(([\w\d.\\/\.]*\*[\w\d.\\/\.]*)+)").unwrap();
     static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$[\w\?#!\$_@\*]*)").unwrap();
     static ref BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{([\w\?#!\$_@\*]+)\})").unwrap();
     static ref PARTIAL_BRACKET_ENV_VAR_REGEX: Regex =
@@ -24,6 +25,17 @@ pub fn in_first_word(pos: usize, text: &str) -> bool {
 pub fn word_at_pos(pos: usize, text: &str) -> String {
     assert!(pos <= text.len());
     for cap in WORD_REGEX.captures_iter(text) {
+        let cap = cap.get(0).unwrap();
+        if pos >= cap.start() && pos <= cap.end() {
+            return cap.as_str().to_string();
+        }
+    }
+    "".to_string()
+}
+
+pub fn glob_at_pos(pos: usize, text: &str) -> String {
+    assert!(pos <= text.len());
+    for cap in GLOB_REGEX.captures_iter(text) {
         let cap = cap.get(0).unwrap();
         if pos >= cap.start() && pos <= cap.end() {
             return cap.as_str().to_string();

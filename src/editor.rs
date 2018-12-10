@@ -113,6 +113,31 @@ impl EditorHelper {
 
         candidates
     }
+
+    fn file_glob_completer(&self, line: &str, pos: usize) -> Option<(Pair, usize)> {
+        let word = util::glob_at_pos(pos, line);
+        if word.is_empty() {
+            return None;
+        }
+
+        let exp = util::expand_glob(&word);
+        if exp.is_empty() {
+            return None;
+        }
+
+        let joined = exp.join(" ");
+        if joined.is_empty() || word == joined {
+            return None;
+        }
+
+        Some((
+            Pair {
+                display: joined.clone(),
+                replacement: joined,
+            },
+            word.len(),
+        ))
+    }
 }
 
 impl Completer for EditorHelper {
@@ -134,6 +159,11 @@ impl Completer for EditorHelper {
         let candidates = self.env_var_completer(line, pos);
         if !candidates.is_empty() {
             return Ok((pos, candidates));
+        }
+
+        // Do file glob completion.
+        if let Some((pair, glob_len)) = self.file_glob_completer(line, pos) {
+            return Ok((pos - glob_len, vec![pair]));
         }
 
         // Otherwise, default to file completion.
