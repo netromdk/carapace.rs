@@ -143,7 +143,12 @@ impl EditorHelper {
 impl Completer for EditorHelper {
     type Candidate = Pair;
 
-    fn complete(&self, line: &str, pos: usize) -> Result<(usize, Vec<Pair>), ReadlineError> {
+    fn complete(
+        &self,
+        line: &str,
+        pos: usize,
+        ctx: &rustyline::Context,
+    ) -> Result<(usize, Vec<Pair>), ReadlineError> {
         // Do built-in command completion if position is within first word.
         if util::in_first_word(pos, line) {
             let candidates = self.builtin_command_completer(line, pos);
@@ -167,12 +172,12 @@ impl Completer for EditorHelper {
         }
 
         // Otherwise, default to file completion.
-        self.file_comp.complete(line, pos)
+        self.file_comp.complete(line, pos, ctx)
     }
 }
 
 impl Hinter for EditorHelper {
-    fn hint(&self, _line: &str, _pos: usize) -> Option<String> {
+    fn hint(&self, _line: &str, _pos: usize, _ctx: &rustyline::Context) -> Option<String> {
         None
     }
 }
