@@ -24,8 +24,8 @@ impl UnsetCommand {
 impl Command for UnsetCommand {
     fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         let matches = self.app.get_matches_from_safe_borrow(&self.args);
-        if matches.is_err() {
-            println!("{}", matches.unwrap_err());
+        if let Err(err) = matches {
+            println!("{}", err);
             return Ok(false);
         }
 

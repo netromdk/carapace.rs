@@ -21,7 +21,8 @@ impl HistoryCommand {
                         .short("c")
                         .long("clear")
                         .help("Clear current session's history (not what's saved on disk)."),
-                ).arg(
+                )
+                .arg(
                     Arg::with_name("write")
                         .short("w")
                         .long("write")
@@ -34,8 +35,8 @@ impl HistoryCommand {
 impl Command for HistoryCommand {
     fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         let matches = self.app.get_matches_from_safe_borrow(&self.vars);
-        if matches.is_err() {
-            println!("{}", matches.unwrap_err());
+        if let Err(err) = matches {
+            println!("{}", err);
             return Ok(false);
         }
 

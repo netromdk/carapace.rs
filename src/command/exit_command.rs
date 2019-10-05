@@ -30,13 +30,8 @@ impl ExitCommand {
 
         let mut code = 0;
         let matches = app.get_matches_from_safe_borrow(&args);
-        if matches.is_ok() {
-            code = matches
-                .unwrap()
-                .value_of("code")
-                .unwrap()
-                .parse::<i32>()
-                .unwrap();
+        if let Ok(value) = matches {
+            code = value.value_of("code").unwrap().parse::<i32>().unwrap();
         }
 
         ExitCommand { code, args, app }
@@ -46,8 +41,8 @@ impl ExitCommand {
 impl Command for ExitCommand {
     fn execute(&mut self, _prompt: &mut Prompt) -> Result<bool, i32> {
         let matches = self.app.get_matches_from_safe_borrow(&self.args);
-        if matches.is_err() {
-            println!("{}", matches.unwrap_err());
+        if let Err(err) = matches {
+            println!("{}", err);
             return Ok(false);
         }
 

@@ -24,8 +24,8 @@ impl Config {
     }
 
     pub fn load(&mut self, path: Option<&str>) {
-        let path = if path.is_some() {
-            PathBuf::from(path.unwrap())
+        let path = if let Some(path_) = path {
+            PathBuf::from(path_)
         } else {
             dirs::home_dir()
                 .unwrap()

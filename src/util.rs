@@ -50,8 +50,10 @@ pub fn env_var_at_pos(pos: usize, text: &str) -> String {
     for cap in BRACKET_ENV_VAR_REGEX.captures_iter(text) {
         let cap0 = cap.get(0).unwrap();
         let cap1 = cap.get(1);
-        if pos >= cap0.start() && pos <= cap0.end() && cap1.is_some() {
-            return cap1.unwrap().as_str().to_string();
+        if pos >= cap0.start() && pos <= cap0.end() {
+            if let Some(cap1_val) = cap1 {
+                return cap1_val.as_str().to_string();
+            }
         }
     }
     for cap in ENV_VAR_REGEX.captures_iter(text) {
@@ -69,8 +71,10 @@ pub fn partial_env_var_at_pos(pos: usize, text: &str) -> String {
     for cap in PARTIAL_BRACKET_ENV_VAR_REGEX.captures_iter(text) {
         let cap0 = cap.get(0).unwrap();
         let cap1 = cap.get(1);
-        if pos >= cap0.start() && pos <= cap0.end() && cap1.is_some() {
-            return cap1.unwrap().as_str().to_string();
+        if pos >= cap0.start() && pos <= cap0.end() {
+            if let Some(cap1_val) = cap1 {
+                return cap1_val.as_str().to_string();
+            }
         }
     }
     for cap in ENV_VAR_REGEX.captures_iter(text) {

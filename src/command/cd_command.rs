@@ -25,8 +25,8 @@ impl CdCommand {
 
         let mut path = "~".to_string();
         let matches = app.get_matches_from_safe_borrow(&args);
-        if matches.is_ok() {
-            path = matches.unwrap().value_of("directory").unwrap().to_string();
+        if let Ok(value) = matches {
+            path = value.value_of("directory").unwrap().to_string();
         }
 
         CdCommand { args, path, app }
@@ -54,8 +54,8 @@ impl CdCommand {
 impl Command for CdCommand {
     fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         let matches = self.app.get_matches_from_safe_borrow(&self.args);
-        if matches.is_err() {
-            println!("{}", matches.unwrap_err());
+        if let Err(err) = matches {
+            println!("{}", err);
             return Ok(false);
         }
 
