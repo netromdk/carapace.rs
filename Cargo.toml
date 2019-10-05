@@ -1,6 +1,6 @@
 [package]
 name = "carapace"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Morten Kristensen <me@mortens.dev>"]
 edition = "2018"
 
