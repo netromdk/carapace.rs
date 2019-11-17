@@ -204,6 +204,8 @@ impl Prompt {
         let bufwtr = BufferWriter::stderr(ColorChoice::Always);
         let mut buffer = bufwtr.buffer();
         let mut color = ColorSpec::new();
+        let mut bright_color = ColorSpec::new();
+        bright_color.set_intense(true);
 
         // Create textual prompt.
         if buffer.set_color(color.set_fg(Some(Color::Green))).is_err() {
@@ -214,7 +216,10 @@ impl Prompt {
         }
 
         if let Ok(cwd) = env::current_dir() {
-            if buffer.set_color(color.set_fg(Some(Color::Blue))).is_err() {
+            if buffer
+                .set_color(bright_color.set_fg(Some(Color::Blue)))
+                .is_err()
+            {
                 return safe_prompt();
             }
             if write!(&mut buffer, " {}", cwd.display()).is_err() {
