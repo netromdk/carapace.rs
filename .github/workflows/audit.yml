@@ -6,6 +6,10 @@ on:
       - '**/Cargo.toml'
       - '**/Cargo.lock'
 
+  # On PRs.
+  pull_request:
+    types: [assigned, opened, synchronize, reopened]
+
   # Once a week at midnight.
   schedule:
     - cron: '0 0 */7 * *'
