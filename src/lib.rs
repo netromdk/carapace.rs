@@ -29,12 +29,6 @@
 //! - `auto_cd` enables implicit `cd` command usage by inputting existing folder paths.
 //! - `aliases` is a "map" of (alias, command replacement) pairs, like `"ll": "ls -l"`.
 
-extern crate clap;
-extern crate dirs;
-extern crate json;
-extern crate regex;
-extern crate rustyline;
-
 #[macro_use]
 extern crate lazy_static;
 

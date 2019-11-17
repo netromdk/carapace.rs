@@ -1,6 +1,3 @@
-extern crate carapace;
-extern crate clap;
-
 use std::process;
 
 use clap::{App, Arg};
