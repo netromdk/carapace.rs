@@ -1,16 +1,10 @@
 name: Rust
-
 on: [push]
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v1
-    - name: Setup
-      run: cargo install --force cargo-audit
     - name: Build
       run: cargo build --verbose
     - name: Run tests
