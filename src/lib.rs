@@ -34,7 +34,6 @@ extern crate dirs;
 extern crate json;
 extern crate regex;
 extern crate rustyline;
-extern crate term;
 
 #[macro_use]
 extern crate lazy_static;

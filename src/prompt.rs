@@ -7,10 +7,10 @@ use std::collections::{HashMap, HashSet};
 use std::env;
 use std::error::Error;
 use std::fmt;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::Write;
 use std::path::Path;
 
-use term::{self, Terminal};
+use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
@@ -201,58 +201,46 @@ impl Prompt {
         // needed.
         let safe_prompt = || SAFE_PROMPT.to_string();
 
-        // In-memory cursor using a vector for data.
-        let cursor = Cursor::new(Vec::new());
-
-        let t = term::TerminfoTerminal::new(cursor);
-        if t.is_none() {
-            return safe_prompt();
-        }
-        let mut t = t.unwrap();
+        let bufwtr = BufferWriter::stderr(ColorChoice::Always);
+        let mut buffer = bufwtr.buffer();
+        let mut color = ColorSpec::new();
+        let mut bright_color = ColorSpec::new();
+        bright_color.set_intense(true);
 
         // Create textual prompt.
-        if t.fg(term::color::GREEN).is_err() {
+        if buffer.set_color(color.set_fg(Some(Color::Green))).is_err() {
             return safe_prompt();
         }
-        if write!(t, "carapace").is_err() {
+        if write!(&mut buffer, "carapace").is_err() {
             println!("Failed to write to term!");
         }
 
         if let Ok(cwd) = env::current_dir() {
-            if t.fg(term::color::BRIGHT_BLUE).is_err() {
+            if buffer
+                .set_color(bright_color.set_fg(Some(Color::Blue)))
+                .is_err()
+            {
                 return safe_prompt();
             }
-            if write!(t, " {}", cwd.display()).is_err() {
+            if write!(&mut buffer, " {}", cwd.display()).is_err() {
                 println!("Failed to write to term!");
             }
         }
 
-        if t.fg(term::color::GREEN).is_err() {
+        if buffer.set_color(color.set_fg(Some(Color::Green))).is_err() {
             return safe_prompt();
         }
-        if write!(t, " % ").is_err() {
+        if write!(&mut buffer, " % ").is_err() {
             println!("Failed to write to term!");
         }
 
-        // NOTE: Resetting yields extra space at end with is annoying, so hardcoding to white color
-        // at end.
-        // t.reset().unwrap();
-        if t.fg(term::color::WHITE).is_err() {
+        // Reset prompt color to white so colors don't flow into the cursor and
+        // user commands.
+        if buffer.set_color(color.set_fg(Some(Color::White))).is_err() {
             return safe_prompt();
         }
 
-        // Get inner cursor (it was moved above) and read what was written to its data vector.
-        let mut inner_cursor = t.into_inner();
-        if inner_cursor.seek(SeekFrom::Start(0)).is_err() {
-            return safe_prompt();
-        }
-
-        let mut out = Vec::new();
-        if inner_cursor.read_to_end(&mut out).is_err() {
-            return safe_prompt();
-        }
-
-        String::from_utf8_lossy(&out).into_owned()
+        String::from_utf8_lossy(&buffer.into_inner()).into_owned()
     }
 
     fn load_history(&mut self) {
