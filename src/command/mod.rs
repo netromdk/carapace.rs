@@ -24,6 +24,9 @@ use self::unset_command::UnsetCommand;
 pub mod export_command;
 use self::export_command::ExportCommand;
 
+pub mod set_command;
+use self::set_command::SetCommand;
+
 /// Base trait of all commands.
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
@@ -40,7 +43,8 @@ pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
     match program.as_ref() {
         "cd" => Box::new(CdCommand::new(args)),
         "exit" => Box::new(ExitCommand::new(args)),
-        "export" | "set" => Box::new(ExportCommand::new(args)),
+        "export" => Box::new(ExportCommand::new(args)),
+        "set" => Box::new(SetCommand::new(args)),
         "history" | "hist" | "h" => Box::new(HistoryCommand::new(args)),
         "quit" => Box::new(QuitCommand {}),
         "unset" => Box::new(UnsetCommand::new(args)),

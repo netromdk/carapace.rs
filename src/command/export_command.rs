@@ -13,9 +13,7 @@ impl ExportCommand {
         ExportCommand {
             args,
             app: App::new("export")
-                .about(
-                    "List or export new environment variables with values.\n\nCommand alias: set",
-                )
+                .about("List or export new environment variables with values.")
                 .setting(AppSettings::NoBinaryName)
                 .setting(AppSettings::DisableVersion)
                 .arg(
