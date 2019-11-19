@@ -7,10 +7,10 @@ use std::collections::HashMap;
 lazy_static! {
     static ref WORD_REGEX: Regex = Regex::new(r"(\w+)").unwrap();
     static ref GLOB_REGEX: Regex = Regex::new(r"(([\w\d.\\/\.]*\*[\w\d.\\/\.]*)+)").unwrap();
-    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$[\w\?#!\$_@\*]*)").unwrap();
-    static ref BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{([\w\?#!\$_@\*]+)\})").unwrap();
+    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$[\w\?\-#!\$_@\*]*)").unwrap();
+    static ref BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{([\w\?\-#!\$_@\*]+)\})").unwrap();
     static ref PARTIAL_BRACKET_ENV_VAR_REGEX: Regex =
-        Regex::new(r"(\$\{([\w\?#!\$_@\*]*)\}?)").unwrap();
+        Regex::new(r"(\$\{([\w\?\-#!\$_@\*]*)\}?)").unwrap();
 }
 
 /// Check if `pos`ition is within first word in `text`.
@@ -240,6 +240,11 @@ mod tests {
     }
 
     #[test]
+    fn env_var_at_pos_dollar_dash() {
+        assert_eq!(env_var_at_pos(6, "hello $- and universe"), "$-");
+    }
+
+    #[test]
     fn bracket_env_var_at_pos_start() {
         assert_eq!(env_var_at_pos(6, "hello ${world} and universe"), "${world}");
     }
@@ -293,8 +298,13 @@ mod tests {
     }
 
     #[test]
-    fn partial_env_var_at_pos_only_dollar_sign_and_bracket() {
+    fn partial_env_var_at_pos_only_dollar_sign_bracket() {
         assert_eq!(partial_env_var_at_pos(6, "hello ${  and universe"), "${");
+    }
+
+    #[test]
+    fn partial_env_var_at_pos_only_dollar_sign_bracket_dash() {
+        assert_eq!(partial_env_var_at_pos(6, "hello ${-  and universe"), "${-");
     }
 
     #[test]
