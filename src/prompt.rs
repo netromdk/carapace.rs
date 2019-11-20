@@ -3,6 +3,7 @@ use crate::context::Context;
 use crate::editor::{self, EditorHelper};
 use crate::util;
 
+use libc;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::error::Error;
@@ -17,6 +18,9 @@ use rustyline::Editor;
 
 /// Fallback textual prompt if term formatting fails.
 const SAFE_PROMPT: &str = "carapace % ";
+
+/// Shell root user id
+const UID_ROOT: u32 = 0;
 
 pub type PromptResult = Result<Box<dyn Command>, Box<dyn Error>>;
 
@@ -230,7 +234,13 @@ impl Prompt {
         if buffer.set_color(color.set_fg(Some(Color::Green))).is_err() {
             return safe_prompt();
         }
-        if write!(&mut buffer, " % ").is_err() {
+
+        let uid_ch = if UID_ROOT == unsafe { libc::geteuid() } {
+            '#'
+        } else {
+            '%'
+        };
+        if write!(&mut buffer, " {} ", uid_ch).is_err() {
             println!("Failed to write to term!");
         }
 
