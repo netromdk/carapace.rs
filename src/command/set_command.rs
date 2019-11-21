@@ -101,8 +101,11 @@ impl Command for SetCommand {
         }
         // +<name>
         else if let Some(opt) = m.value_of("unset") {
-            if !opt.starts_with("+") {
-                println!("Argument to unset must start with '+', Like '+x'.");
+            if !opt.starts_with("+") || opt.len() == 1 {
+                println!(
+                    "Argument to unset must start with '+' with a non-empty string following, \
+                     Like '+x'."
+                );
                 return Ok(false);
             }
             let opt = opt.get(1..).unwrap();
@@ -114,5 +117,118 @@ impl Command for SetCommand {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::context;
+
+    #[test]
+    fn new() {
+        let args = vec![String::from("arg")];
+        let cmd = SetCommand::new(args.clone());
+        assert_eq!(cmd.args, args);
+    }
+
+    #[test]
+    fn invalid_arg_single_plus() {
+        let mut prompt = Prompt::create(context::default());
+        let mut cmd = SetCommand::new(vec!["+".to_string()]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_ok());
+        assert!(!res.unwrap());
+    }
+
+    #[test]
+    fn invalid_arg_not_starting_with_plus() {
+        let mut prompt = Prompt::create(context::default());
+        let mut cmd = SetCommand::new(vec!["x".to_string()]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_ok());
+        assert!(!res.unwrap());
+    }
+
+    #[test]
+    fn unknown_option_name() {
+        let mut prompt = Prompt::create(context::default());
+        let mut cmd = SetCommand::new(vec!["-o".to_string(), "foobarbaz".to_string()]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_ok());
+        assert!(!res.unwrap());
+    }
+
+    #[test]
+    fn unknown_option() {
+        let mut prompt = Prompt::create(context::default());
+        let mut cmd = SetCommand::new(vec!["-q".to_string()]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_ok());
+        assert!(!res.unwrap());
+    }
+
+    #[test]
+    fn set_x() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        let mut cmd = SetCommand::new(vec!["-x".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let env = &prompt.context.borrow().env;
+        assert!(env.contains_key("-"));
+        assert_eq!(env["-"], "x");
+    }
+
+    #[test]
+    fn set_xtrace() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        let mut cmd = SetCommand::new(vec!["-o".to_string(), "xtrace".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let env = &prompt.context.borrow().env;
+        assert!(env.contains_key("-"));
+        assert_eq!(env["-"], "x");
+    }
+
+    #[test]
+    fn set_xtrace_long() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        let mut cmd = SetCommand::new(vec!["--option".to_string(), "xtrace".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let env = &prompt.context.borrow().env;
+        assert!(env.contains_key("-"));
+        assert_eq!(env["-"], "x");
+    }
+
+    #[test]
+    fn unset_x() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        {
+            let mut cmd = SetCommand::new(vec!["-x".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let env = &prompt.context.borrow().env;
+            assert!(env.contains_key("-"));
+            assert_eq!(env["-"], "x");
+        }
+
+        {
+            let mut cmd = SetCommand::new(vec!["+x".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let env = &prompt.context.borrow().env;
+            assert!(env.contains_key("-"));
+            assert_eq!(env["-"], "");
+        }
     }
 }
