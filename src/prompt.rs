@@ -36,17 +36,23 @@ pub struct Prompt {
 }
 
 impl Prompt {
+    /// Creates prompt from context and loads history and environment.
     pub fn new(context: Context) -> Prompt {
+        let mut p = Prompt::create(context);
+        p.load_history();
+        p.load_env();
+        p
+    }
+
+    /// Create prompt from context but don't load history or environment.
+    pub fn create(context: Context) -> Prompt {
         let editor = editor::create(&context.clone());
-        let mut p = Prompt {
+        Prompt {
             context,
             editor,
             restore_env: HashMap::new(),
             delete_env: HashSet::new(),
-        };
-        p.load_history();
-        p.load_env();
-        p
+        }
     }
 
     /// Shows prompt and reads command and arguments from stdin.
@@ -305,36 +311,17 @@ mod tests {
     use crate::config::Config;
     use crate::context;
 
-    macro_rules! create_test_prompt {
-        ($p:ident) => {
-            let context = context::default();
-            let editor = editor::create(&context.clone());
-            let mut $p = Prompt {
-                context,
-                editor,
-                restore_env: HashMap::new(),
-                delete_env: HashSet::new(),
-            };
-        };
-    }
-
     macro_rules! create_test_prompt_with_config {
         ($p:ident, $cfg:expr) => {
             let context = context::default();
             context.borrow_mut().config = $cfg;
-            let editor = editor::create(&context.clone());
-            let mut $p = Prompt {
-                context,
-                editor,
-                restore_env: HashMap::new(),
-                delete_env: HashSet::new(),
-            };
+            let mut $p = Prompt::create(context);
         };
     }
 
     #[test]
     fn parse_command_empty() {
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
         let cmd = prompt.parse_command(&String::new());
         assert!(cmd.is_err());
         assert!(cmd.err().unwrap().is::<NoCommandError>());
@@ -343,7 +330,7 @@ mod tests {
     #[test]
     /// They should yield the same in this case.
     fn parse_command_calls_command_parse() {
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
 
         let cmd = prompt.parse_command("ls -l");
         assert!(cmd.is_ok());
@@ -357,7 +344,7 @@ mod tests {
     #[test]
     fn parse_command_auto_cd() {
         // auto-cd is enabled per default in Config.
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
         let cmd = prompt.parse_command(".");
         assert!(cmd.is_ok());
 
@@ -368,7 +355,7 @@ mod tests {
 
     #[test]
     fn parse_command_env_vars_replaced() {
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
         prompt
             .context
             .borrow_mut()
@@ -400,7 +387,7 @@ mod tests {
 
     #[test]
     fn parse_command_inline_env_vars() {
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
 
         let cmd = prompt.parse_command("A=1 echo test");
         assert!(cmd.is_ok());
@@ -415,7 +402,7 @@ mod tests {
 
     #[test]
     fn parse_command_inline_env_vars_replaced_for_invocation() {
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
 
         let cmd = prompt.parse_command("A=1 echo $A");
         assert!(cmd.is_ok());
@@ -430,7 +417,7 @@ mod tests {
 
     #[test]
     fn parse_command_inline_env_vars_replaces_session_env() {
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
         prompt
             .context
             .borrow_mut()
@@ -456,7 +443,7 @@ mod tests {
 
     #[test]
     fn parse_command_inline_env_vars_restored_before_next_command() {
-        create_test_prompt!(prompt);
+        let mut prompt = Prompt::create(context::default());
         prompt
             .context
             .borrow_mut()
