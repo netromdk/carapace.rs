@@ -61,7 +61,11 @@ pub fn execute(cmd: PromptResult, prompt: &mut Prompt) -> Option<i32> {
         },
         Err(err) => {
             if err.is::<EofError>() {
-                Some(0)
+                if prompt.context.borrow().ignoreeof {
+                    None
+                } else {
+                    Some(0)
+                }
             } else {
                 println!("{}", err);
                 None

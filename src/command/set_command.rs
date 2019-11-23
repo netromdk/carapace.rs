@@ -43,12 +43,13 @@ impl SetCommand {
                         .value_name("name")
                         .help(
                             "Sets option given option name:\n\
-                             xtrace   equivalent to -x\n\
-                             errexit  equivalent to -e\n\
-                             verbose  equivalent to -v (verbose level 1)\n\
+                             xtrace     equivalent to -x\n\
+                             errexit    equivalent to -e\n\
+                             verbose    equivalent to -v (verbose level 1)\n\
                              \n\
-                             emacs    edit mode\n\
-                             vi       edit mode",
+                             emacs      edit mode\n\
+                             vi         edit mode\n\
+                             ignoreeof  Don't exit shell when reading EOF",
                         ),
                 )
                 .arg(
@@ -137,6 +138,10 @@ impl Command for SetCommand {
                 }
                 "vi" => {
                     prompt.editor.set_edit_mode(EditMode::Vi);
+                    return Ok(true);
+                }
+                "ignoreeof" => {
+                    prompt.context.borrow_mut().ignoreeof = true;
                     return Ok(true);
                 }
                 _ => {
@@ -431,5 +436,17 @@ mod tests {
 
         let ctx = prompt.context.borrow();
         assert_eq!(ctx.verbose, 0);
+    }
+
+    #[test]
+    fn set_ignoreeof() {
+        let mut prompt = Prompt::create(context::default());
+        prompt.context.borrow_mut().ignoreeof = false;
+
+        let mut cmd = SetCommand::new(vec!["-o".to_string(), "ignoreeof".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert!(ctx.ignoreeof);
     }
 }

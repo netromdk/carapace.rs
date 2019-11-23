@@ -28,6 +28,9 @@ pub struct ContextData {
     /// Whether or not to exit shell immediately if a command exit with non-zero status
     /// (set via `set -e`).
     pub errexit: bool,
+
+    /// Whether or not to not exit shell when reading EOF.
+    pub ignoreeof: bool,
 }
 
 impl ContextData {
@@ -38,6 +41,7 @@ impl ContextData {
             env: env::vars().collect(),
             xtrace: false,
             errexit: false,
+            ignoreeof: false,
         }
     }
 }
@@ -50,6 +54,7 @@ impl Default for ContextData {
             env: HashMap::new(),
             xtrace: false,
             errexit: false,
+            ignoreeof: false,
         }
     }
 }
