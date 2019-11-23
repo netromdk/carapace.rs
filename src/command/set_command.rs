@@ -74,7 +74,7 @@ impl SetCommand {
                 return Ok(false);
             }
         }
-        return Ok(true);
+        Ok(true)
     }
 }
 
@@ -105,7 +105,7 @@ impl Command for SetCommand {
         }
         // +<name>
         else if let Some(opt) = m.value_of("unset") {
-            if !opt.starts_with("+") || opt.len() == 1 {
+            if !opt.starts_with('+') || opt.len() == 1 {
                 println!(
                     "Argument to unset must start with '+' with a non-empty string following, \
                      Like '+x'."
