@@ -30,6 +30,11 @@ impl SetCommand {
                         .short("e")
                         .help("Exit shell if a command yields non-zero exit code."),
                 )
+                .arg(Arg::with_name("verbose").short("v").multiple(true).help(
+                    "Sets verbosity level. Can be used multiple times, like '-v -v -v' or '-vvv' \
+                     for a verbosity level of 3. With >=1 the shell prints input lines as they \
+                     are read.",
+                ))
                 .arg(
                     Arg::with_name("option")
                         .short("o")
@@ -40,6 +45,8 @@ impl SetCommand {
                             "Sets option given option name:\n\
                              xtrace   equivalent to -x\n\
                              errexit  equivalent to -e\n\
+                             verbose  equivalent to -v (verbose level 1)\n\
+                             \n\
                              emacs    edit mode\n\
                              vi       edit mode",
                         ),
@@ -82,6 +89,9 @@ impl SetCommand {
                     ctx.errexit = enable;
                 }
             }
+            "v" => {
+                prompt.context.borrow_mut().verbose = if enable { 1 } else { 0 };
+            }
             _ => {
                 println!("Unknown option: {}", opt);
                 return Ok(false);
@@ -109,11 +119,18 @@ impl Command for SetCommand {
         else if m.is_present("errexit") {
             return self.set("e", true, prompt);
         }
+        // -v..
+        else if m.is_present("verbose") {
+            let level = m.occurrences_of("verbose");
+            prompt.context.borrow_mut().verbose = level;
+            return Ok(true);
+        }
         // -o <name>
         else if let Some(opt) = m.value_of("option") {
             let opt = match opt {
                 "xtrace" => "x",
                 "errexit" => "e",
+                "verbose" => "v",
                 "emacs" => {
                     prompt.editor.set_edit_mode(EditMode::Emacs);
                     return Ok(true);
@@ -359,5 +376,60 @@ mod tests {
         assert!(cmd.execute(&mut prompt).is_ok());
 
         assert_eq!(EditMode::Vi, prompt.editor.config_mut().edit_mode());
+    }
+
+    #[test]
+    fn set_v() {
+        let mut prompt = Prompt::create(context::default());
+        prompt.context.borrow_mut().verbose = 0;
+
+        {
+            let mut cmd = SetCommand::new(vec!["-v".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert_eq!(ctx.verbose, 1);
+        }
+
+        {
+            let mut cmd = SetCommand::new(vec!["-v".to_string(), "-v".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert_eq!(ctx.verbose, 2);
+        }
+
+        {
+            let mut cmd =
+                SetCommand::new(vec!["-v".to_string(), "-v".to_string(), "-v".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert_eq!(ctx.verbose, 3);
+        }
+    }
+
+    #[test]
+    fn set_verbose() {
+        let mut prompt = Prompt::create(context::default());
+        prompt.context.borrow_mut().verbose = 0;
+
+        let mut cmd = SetCommand::new(vec!["-o".to_string(), "verbose".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert_eq!(ctx.verbose, 1);
+    }
+
+    #[test]
+    fn unset_v() {
+        let mut prompt = Prompt::create(context::default());
+        prompt.context.borrow_mut().verbose = 1;
+
+        let mut cmd = SetCommand::new(vec!["+v".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert_eq!(ctx.verbose, 0);
     }
 }
