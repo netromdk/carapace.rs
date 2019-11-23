@@ -23,6 +23,11 @@ impl SetCommand {
                         .help("Prints commands and their arguments when executed."),
                 )
                 .arg(
+                    Arg::with_name("errexit")
+                        .short("e")
+                        .help("Exit shell if a command yields non-zero exit code."),
+                )
+                .arg(
                     Arg::with_name("option")
                         .short("o")
                         .long("option")
@@ -30,7 +35,8 @@ impl SetCommand {
                         .value_name("name")
                         .help(
                             "Sets option given option name:\n\
-                             xtrace   equivalent to -x",
+                             xtrace   equivalent to -x\n\
+                             errexit  equivalent to -e",
                         ),
                 )
                 .arg(
@@ -44,7 +50,7 @@ impl SetCommand {
     /// Set or unset options by adding or removing from `$-` in environment.
     fn set(&mut self, opt: &str, enable: bool, prompt: &mut Prompt) -> Result<bool, i32> {
         match opt {
-            "x" => {
+            "x" | "e" => {
                 let mut ctx = prompt.context.borrow_mut();
 
                 let env = &mut ctx.env;
@@ -67,6 +73,8 @@ impl SetCommand {
 
                 if opt == "x" {
                     ctx.xtrace = enable;
+                } else if opt == "e" {
+                    ctx.errexit = enable;
                 }
             }
             _ => {
@@ -92,10 +100,15 @@ impl Command for SetCommand {
         if m.is_present("xtrace") {
             return self.set("x", true, prompt);
         }
+        // -e
+        else if m.is_present("errexit") {
+            return self.set("e", true, prompt);
+        }
         // -o <name>
         else if let Some(opt) = m.value_of("option") {
             let opt = match opt {
                 "xtrace" => "x",
+                "errexit" => "e",
                 _ => {
                     println!("Unknown option name: {}", opt);
                     return Ok(false);
@@ -238,6 +251,74 @@ mod tests {
             assert!(ctx.env.contains_key("-"));
             assert_eq!(ctx.env["-"], "");
             assert!(!ctx.xtrace);
+        }
+    }
+
+    #[test]
+    fn set_e() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        let mut cmd = SetCommand::new(vec!["-e".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "e");
+        assert!(ctx.errexit);
+    }
+
+    #[test]
+    fn set_errexit() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        let mut cmd = SetCommand::new(vec!["-o".to_string(), "errexit".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "e");
+        assert!(ctx.errexit);
+    }
+
+    #[test]
+    fn set_errexit_long() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        let mut cmd = SetCommand::new(vec!["--option".to_string(), "errexit".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "e");
+        assert!(ctx.errexit);
+    }
+
+    #[test]
+    fn unset_e() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        {
+            let mut cmd = SetCommand::new(vec!["-e".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "e");
+            assert!(ctx.errexit);
+        }
+
+        {
+            let mut cmd = SetCommand::new(vec!["+e".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "");
+            assert!(!ctx.errexit);
         }
     }
 }

@@ -24,6 +24,10 @@ pub struct ContextData {
 
     /// Extra trace option (set via `set -x`) outputs command trace to stdout.
     pub xtrace: bool,
+
+    /// Whether or not to exit shell immediately if a command exit with non-zero status
+    /// (set via `set -e`).
+    pub errexit: bool,
 }
 
 impl ContextData {
@@ -33,6 +37,7 @@ impl ContextData {
             config: Config::new(config_path),
             env: env::vars().collect(),
             xtrace: false,
+            errexit: false,
         }
     }
 }
@@ -44,6 +49,7 @@ impl Default for ContextData {
             config: Config::default(),
             env: HashMap::new(),
             xtrace: false,
+            errexit: false,
         }
     }
 }
