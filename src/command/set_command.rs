@@ -2,6 +2,9 @@ use super::*;
 
 use clap::{App, AppSettings, Arg};
 
+use rustyline::config::Configurer;
+use rustyline::EditMode;
+
 /// Set command manipulates shell options.
 pub struct SetCommand {
     args: Vec<String>,
@@ -36,7 +39,9 @@ impl SetCommand {
                         .help(
                             "Sets option given option name:\n\
                              xtrace   equivalent to -x\n\
-                             errexit  equivalent to -e",
+                             errexit  equivalent to -e\n\
+                             emacs    edit mode\n\
+                             vi       edit mode",
                         ),
                 )
                 .arg(
@@ -109,6 +114,14 @@ impl Command for SetCommand {
             let opt = match opt {
                 "xtrace" => "x",
                 "errexit" => "e",
+                "emacs" => {
+                    prompt.editor.set_edit_mode(EditMode::Emacs);
+                    return Ok(true);
+                }
+                "vi" => {
+                    prompt.editor.set_edit_mode(EditMode::Vi);
+                    return Ok(true);
+                }
                 _ => {
                     println!("Unknown option name: {}", opt);
                     return Ok(false);
@@ -320,5 +333,31 @@ mod tests {
             assert_eq!(ctx.env["-"], "");
             assert!(!ctx.errexit);
         }
+    }
+
+    #[test]
+    fn set_emacs() {
+        let mut prompt = Prompt::create(context::default());
+
+        // Set it to something else to ensure it gets set.
+        prompt.editor.set_edit_mode(EditMode::Vi);
+
+        let mut cmd = SetCommand::new(vec!["-o".to_string(), "emacs".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        assert_eq!(EditMode::Emacs, prompt.editor.config_mut().edit_mode());
+    }
+
+    #[test]
+    fn set_vi() {
+        let mut prompt = Prompt::create(context::default());
+
+        // Set it to something else to ensure it gets set.
+        prompt.editor.set_edit_mode(EditMode::Emacs);
+
+        let mut cmd = SetCommand::new(vec!["-o".to_string(), "vi".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        assert_eq!(EditMode::Vi, prompt.editor.config_mut().edit_mode());
     }
 }
