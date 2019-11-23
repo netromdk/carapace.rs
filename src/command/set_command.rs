@@ -45,7 +45,9 @@ impl SetCommand {
     fn set(&mut self, opt: &str, enable: bool, prompt: &mut Prompt) -> Result<bool, i32> {
         match opt {
             "x" => {
-                let env = &mut prompt.context.borrow_mut().env;
+                let mut ctx = prompt.context.borrow_mut();
+
+                let env = &mut ctx.env;
                 if !env.contains_key("-") {
                     env.insert(String::from("-"), String::from(""));
                 }
@@ -63,7 +65,9 @@ impl SetCommand {
                     }
                 }
 
-                // TODO: when xtrace is enabled then use it to display commands and arguments..
+                if opt == "x" {
+                    ctx.xtrace = enable;
+                }
             }
             _ => {
                 println!("Unknown option: {}", opt);
@@ -177,9 +181,10 @@ mod tests {
         let mut cmd = SetCommand::new(vec!["-x".to_string()]);
         assert!(cmd.execute(&mut prompt).is_ok());
 
-        let env = &prompt.context.borrow().env;
-        assert!(env.contains_key("-"));
-        assert_eq!(env["-"], "x");
+        let ctx = prompt.context.borrow();
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "x");
+        assert!(ctx.xtrace);
     }
 
     #[test]
@@ -190,9 +195,10 @@ mod tests {
         let mut cmd = SetCommand::new(vec!["-o".to_string(), "xtrace".to_string()]);
         assert!(cmd.execute(&mut prompt).is_ok());
 
-        let env = &prompt.context.borrow().env;
-        assert!(env.contains_key("-"));
-        assert_eq!(env["-"], "x");
+        let ctx = prompt.context.borrow();
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "x");
+        assert!(ctx.xtrace);
     }
 
     #[test]
@@ -203,9 +209,10 @@ mod tests {
         let mut cmd = SetCommand::new(vec!["--option".to_string(), "xtrace".to_string()]);
         assert!(cmd.execute(&mut prompt).is_ok());
 
-        let env = &prompt.context.borrow().env;
-        assert!(env.contains_key("-"));
-        assert_eq!(env["-"], "x");
+        let ctx = prompt.context.borrow();
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "x");
+        assert!(ctx.xtrace);
     }
 
     #[test]
@@ -217,18 +224,20 @@ mod tests {
             let mut cmd = SetCommand::new(vec!["-x".to_string()]);
             assert!(cmd.execute(&mut prompt).is_ok());
 
-            let env = &prompt.context.borrow().env;
-            assert!(env.contains_key("-"));
-            assert_eq!(env["-"], "x");
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "x");
+            assert!(ctx.xtrace);
         }
 
         {
             let mut cmd = SetCommand::new(vec!["+x".to_string()]);
             assert!(cmd.execute(&mut prompt).is_ok());
 
-            let env = &prompt.context.borrow().env;
-            assert!(env.contains_key("-"));
-            assert_eq!(env["-"], "");
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "");
+            assert!(!ctx.xtrace);
         }
     }
 }

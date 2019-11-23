@@ -183,6 +183,11 @@ impl Prompt {
             program = "cd".to_string();
         }
 
+        // Show fully expanded command program and arguments with xtrace option enabled.
+        if self.context.borrow().xtrace {
+            println!("+carapace> {} {}", program, args.join(" "));
+        }
+
         Ok(command::parse(program, args))
     }
 

@@ -21,6 +21,9 @@ pub struct ContextData {
 
     /// Environment passed to newly spawned processes.
     pub env: HashMap<String, String>,
+
+    /// Extra trace option (set via `set -x`) outputs command trace to stdout.
+    pub xtrace: bool,
 }
 
 impl ContextData {
@@ -29,6 +32,7 @@ impl ContextData {
             verbose,
             config: Config::new(config_path),
             env: env::vars().collect(),
+            xtrace: false,
         }
     }
 }
@@ -39,6 +43,7 @@ impl Default for ContextData {
             verbose: 0,
             config: Config::default(),
             env: HashMap::new(),
+            xtrace: false,
         }
     }
 }
