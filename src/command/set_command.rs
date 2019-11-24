@@ -1,5 +1,7 @@
 use super::*;
 
+use crate::util::{append_value_for_key, replace_value_for_key};
+
 use clap::{App, AppSettings, Arg};
 
 use rustyline::config::Configurer;
@@ -91,22 +93,12 @@ EXAMPLES:
             "x" | "e" | "v" => {
                 let mut ctx = prompt.context.borrow_mut();
 
-                let env = &mut ctx.env;
-                if !env.contains_key("-") {
-                    env.insert(String::from("-"), String::from(""));
-                }
-
                 // Add or remove the option from $-.
+                let env = &mut ctx.env;
                 if enable {
-                    let old_value = env[&String::from("-")].clone();
-                    if !old_value.contains(opt) {
-                        env.insert(String::from("-"), old_value + opt);
-                    }
+                    append_value_for_key(opt, "-", env);
                 } else {
-                    let old_value = env[&String::from("-")].clone();
-                    if old_value.contains(opt) {
-                        env.insert(String::from("-"), old_value.replace(opt, ""));
-                    }
+                    replace_value_for_key(opt, "", "-", env);
                 }
 
                 if opt == "x" {
@@ -146,14 +138,12 @@ impl Command for SetCommand {
         }
         // -v..
         else if m.is_present("verbose") {
-            // Reuse handling to manipulate environment, but set level according to amount of
-            // occurrences.
-            if self.set("v", true, prompt).unwrap_or(false) {
-                let level = m.occurrences_of("verbose");
-                prompt.context.borrow_mut().verbose = level;
-                return Ok(true);
-            }
-            return Ok(false);
+            let mut ctx = prompt.context.borrow_mut();
+            append_value_for_key("v", "-", &mut ctx.env);
+
+            let level = m.occurrences_of("verbose");
+            ctx.verbose = level;
+            return Ok(true);
         }
         // -o <name>
         else if let Some(opt) = m.value_of("option") {

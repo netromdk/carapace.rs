@@ -39,9 +39,8 @@ pub mod editor;
 pub mod prompt;
 pub mod util;
 
-use crate::command::set_command::SetCommand;
-use crate::command::Command;
 use crate::prompt::Prompt;
+use crate::util::append_value_for_key;
 
 use clap::ArgMatches;
 
@@ -64,8 +63,7 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
 
     // Append "v" to $- if verbose is set. This compliments the set command.
     if verbose_level > 0 {
-        let mut cmd = SetCommand::new(vec!["-v".to_string(); verbose_level as usize]);
-        assert!(cmd.execute(&mut prompt).unwrap());
+        append_value_for_key("v", "-", &mut prompt.context.borrow_mut().env);
     }
 
     // If -c <command> is specified then run command and exit.
