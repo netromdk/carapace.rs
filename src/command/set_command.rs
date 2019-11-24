@@ -17,7 +17,28 @@ impl SetCommand {
             args,
             app: App::new("set")
                 .about("Set or unset shell options.")
-                .after_help("Options currently set can be displayed via environment variable $-.")
+                .after_help(
+                    r#"ENVIRONMENT:
+
+  Options currently set can be displayed via environment variable $-.
+  Note that it only applies to options with a shorthand form, like 'x' for xtrace.
+
+EXAMPLES:
+
+  Set xtrace option:
+    set -x
+    set -o xtrace
+    set --option xtrace
+
+  Set Emacs edit mode:
+    set -o emacs
+    set --option emacs
+
+  Unset errexit mode:
+    set +e
+    set +o errexit
+    set +option errexit"#,
+                )
                 .setting(AppSettings::NoBinaryName)
                 .setting(AppSettings::DisableVersion)
                 .arg(
@@ -42,14 +63,14 @@ impl SetCommand {
                         .takes_value(true)
                         .value_name("name")
                         .help(
-                            "Sets option given option name:\n\
-                             xtrace     equivalent to -x\n\
-                             errexit    equivalent to -e\n\
-                             verbose    equivalent to -v (verbose level 1)\n\
-                             \n\
-                             emacs      edit mode\n\
-                             vi         edit mode\n\
-                             ignoreeof  Don't exit shell when reading EOF",
+                            r#"Sets option given option name:
+  xtrace     equivalent to -x
+  errexit    equivalent to -e
+  verbose    equivalent to -v (verbose level 1)
+
+  emacs      edit mode
+  vi         edit mode
+  ignoreeof  Don't exit shell when reading EOF"#,
                         ),
                 )
                 .arg(Arg::with_name("unset").value_name("+NAME").help(
