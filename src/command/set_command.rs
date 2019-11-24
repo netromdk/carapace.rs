@@ -67,7 +67,7 @@ impl SetCommand {
     /// Set or unset options by adding or removing from `$-` in environment.
     fn set(&mut self, opt: &str, enable: bool, prompt: &mut Prompt) -> Result<bool, i32> {
         match opt {
-            "x" | "e" => {
+            "x" | "e" | "v" => {
                 let mut ctx = prompt.context.borrow_mut();
 
                 let env = &mut ctx.env;
@@ -92,10 +92,9 @@ impl SetCommand {
                     ctx.xtrace = enable;
                 } else if opt == "e" {
                     ctx.errexit = enable;
+                } else if opt == "v" {
+                    ctx.verbose = if enable { 1 } else { 0 };
                 }
-            }
-            "v" => {
-                prompt.context.borrow_mut().verbose = if enable { 1 } else { 0 };
             }
             _ => {
                 println!("Unknown option: {}", opt);
@@ -126,9 +125,14 @@ impl Command for SetCommand {
         }
         // -v..
         else if m.is_present("verbose") {
-            let level = m.occurrences_of("verbose");
-            prompt.context.borrow_mut().verbose = level;
-            return Ok(true);
+            // Reuse handling to manipulate environment, but set level according to amount of
+            // occurrences.
+            if self.set("v", true, prompt).unwrap_or(false) {
+                let level = m.occurrences_of("verbose");
+                prompt.context.borrow_mut().verbose = level;
+                return Ok(true);
+            }
+            return Ok(false);
         }
         // -o <name>
         else if let Some(opt) = m.value_of("option") {
@@ -499,6 +503,8 @@ mod tests {
 
             let ctx = prompt.context.borrow();
             assert_eq!(ctx.verbose, 1);
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "v");
         }
 
         {
@@ -507,6 +513,8 @@ mod tests {
 
             let ctx = prompt.context.borrow();
             assert_eq!(ctx.verbose, 2);
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "v");
         }
 
         {
@@ -516,6 +524,8 @@ mod tests {
 
             let ctx = prompt.context.borrow();
             assert_eq!(ctx.verbose, 3);
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "v");
         }
     }
 
@@ -529,6 +539,8 @@ mod tests {
 
         let ctx = prompt.context.borrow();
         assert_eq!(ctx.verbose, 1);
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "v");
     }
 
     #[test]
@@ -541,6 +553,8 @@ mod tests {
 
         let ctx = prompt.context.borrow();
         assert_eq!(ctx.verbose, 0);
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "");
     }
 
     #[test]
@@ -553,6 +567,8 @@ mod tests {
 
         let ctx = prompt.context.borrow();
         assert_eq!(ctx.verbose, 0);
+        assert!(ctx.env.contains_key("-"));
+        assert_eq!(ctx.env["-"], "");
     }
 
     #[test]
