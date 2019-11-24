@@ -52,10 +52,14 @@ impl SetCommand {
                              ignoreeof  Don't exit shell when reading EOF",
                         ),
                 )
+                .arg(Arg::with_name("unset").value_name("+NAME").help(
+                    "Unsets option NAME, like '+x' to unset xtrace option. Can also be \
+                     used via '+option <name>'",
+                ))
                 .arg(
-                    Arg::with_name("unset")
-                        .value_name("+NAME")
-                        .help("Unsets option NAME, like '+x' to unset xtrace option."),
+                    // Used in conjunction with "unset" argument in the <name> case of `+o <name>`
+                    // and `+option <name>`.
+                    Arg::with_name("unset-name").hidden(true),
                 ),
         }
     }
@@ -151,17 +155,48 @@ impl Command for SetCommand {
             };
             return self.set(opt, true, prompt);
         }
-        // +<name>
+        // +<name> or +o/+option <name>
         else if let Some(opt) = m.value_of("unset") {
-            if !opt.starts_with('+') || opt.len() == 1 {
-                println!(
-                    "Argument to unset must start with '+' with a non-empty string following, \
-                     Like '+x'."
-                );
-                return Ok(false);
+            if opt == "+o" || opt == "+option" {
+                if let Some(opt_name) = m.value_of("unset-name") {
+                    let opt = match opt_name {
+                        "xtrace" => "x",
+                        "errexit" => "e",
+                        "verbose" => "v",
+                        "emacs" | "vi" => {
+                            println!(
+                                "Cannot unset {} edit mode! Choice must be set explicitly.",
+                                opt_name
+                            );
+                            return Ok(false);
+                        }
+
+                        "ignoreeof" => {
+                            prompt.context.borrow_mut().ignoreeof = false;
+                            return Ok(true);
+                        }
+                        _ => {
+                            println!("Unknown option name: {}", opt_name);
+                            return Ok(false);
+                        }
+                    };
+                    return self.set(opt, false, prompt);
+                } else {
+                    println!("Option name required after {}!", opt);
+                    return Ok(false);
+                }
+            } else {
+                // +<option>
+                if !opt.starts_with('+') || opt.len() == 1 {
+                    println!(
+                        "Argument to unset must start with '+' with a non-empty string following, \
+                         Like '+x'."
+                    );
+                    return Ok(false);
+                }
+                let opt = opt.get(1..).unwrap();
+                return self.set(opt, false, prompt);
             }
-            let opt = opt.get(1..).unwrap();
-            return self.set(opt, false, prompt);
         }
 
         Ok(true)
@@ -290,6 +325,32 @@ mod tests {
     }
 
     #[test]
+    fn unset_xtrace() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        {
+            let mut cmd = SetCommand::new(vec!["-x".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "x");
+            assert!(ctx.xtrace);
+        }
+
+        {
+            let mut cmd = SetCommand::new(vec!["+option".to_string(), "xtrace".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "");
+            assert!(!ctx.xtrace);
+        }
+    }
+
+    #[test]
     fn set_e() {
         let mut prompt = Prompt::create(context::default());
         assert!(!prompt.context.borrow().env.contains_key("-"));
@@ -358,6 +419,32 @@ mod tests {
     }
 
     #[test]
+    fn unset_errexit() {
+        let mut prompt = Prompt::create(context::default());
+        assert!(!prompt.context.borrow().env.contains_key("-"));
+
+        {
+            let mut cmd = SetCommand::new(vec!["-e".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "e");
+            assert!(ctx.errexit);
+        }
+
+        {
+            let mut cmd = SetCommand::new(vec!["+option".to_string(), "errexit".to_string()]);
+            assert!(cmd.execute(&mut prompt).is_ok());
+
+            let ctx = prompt.context.borrow();
+            assert!(ctx.env.contains_key("-"));
+            assert_eq!(ctx.env["-"], "");
+            assert!(!ctx.errexit);
+        }
+    }
+
+    #[test]
     fn set_emacs() {
         let mut prompt = Prompt::create(context::default());
 
@@ -371,6 +458,15 @@ mod tests {
     }
 
     #[test]
+    fn no_unset_emacs() {
+        let mut prompt = Prompt::create(context::default());
+        let mut cmd = SetCommand::new(vec!["+o".to_string(), "emacs".to_string()]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_ok());
+        assert_eq!(false, res.unwrap());
+    }
+
+    #[test]
     fn set_vi() {
         let mut prompt = Prompt::create(context::default());
 
@@ -381,6 +477,15 @@ mod tests {
         assert!(cmd.execute(&mut prompt).is_ok());
 
         assert_eq!(EditMode::Vi, prompt.editor.config_mut().edit_mode());
+    }
+
+    #[test]
+    fn no_unset_vi() {
+        let mut prompt = Prompt::create(context::default());
+        let mut cmd = SetCommand::new(vec!["+o".to_string(), "vi".to_string()]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_ok());
+        assert_eq!(false, res.unwrap());
     }
 
     #[test]
@@ -439,6 +544,18 @@ mod tests {
     }
 
     #[test]
+    fn unset_verbose() {
+        let mut prompt = Prompt::create(context::default());
+        prompt.context.borrow_mut().verbose = 1;
+
+        let mut cmd = SetCommand::new(vec!["+option".to_string(), "verbose".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert_eq!(ctx.verbose, 0);
+    }
+
+    #[test]
     fn set_ignoreeof() {
         let mut prompt = Prompt::create(context::default());
         prompt.context.borrow_mut().ignoreeof = false;
@@ -448,5 +565,17 @@ mod tests {
 
         let ctx = prompt.context.borrow();
         assert!(ctx.ignoreeof);
+    }
+
+    #[test]
+    fn unset_ignoreeof() {
+        let mut prompt = Prompt::create(context::default());
+        prompt.context.borrow_mut().ignoreeof = true;
+
+        let mut cmd = SetCommand::new(vec!["+o".to_string(), "ignoreeof".to_string()]);
+        assert!(cmd.execute(&mut prompt).is_ok());
+
+        let ctx = prompt.context.borrow();
+        assert!(!ctx.ignoreeof);
     }
 }
