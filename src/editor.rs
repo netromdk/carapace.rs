@@ -91,7 +91,7 @@ impl EditorHelper {
             return candidates;
         }
 
-        for k in self.context.borrow().env.keys() {
+        for k in self.context.borrow().env.as_ref().keys() {
             let lookfor = format!("${}", k);
             let lookfor2 = format!("${{{}", k);
 
@@ -189,9 +189,8 @@ impl Helper for EditorHelper {}
 mod tests {
     use super::*;
 
-    use std::collections::HashMap;
-
     use crate::context;
+    use crate::env::Env;
 
     macro_rules! create_test_editor {
         ($e:ident) => {
@@ -312,7 +311,7 @@ mod tests {
 
     #[test]
     fn env_var_completer_normal_var() {
-        let mut env = HashMap::new();
+        let mut env = Env::default();
         env.insert("HELLO".to_string(), "WORLD".to_string());
         create_test_editor_with_env!(editor; env);
 
@@ -324,7 +323,7 @@ mod tests {
 
     #[test]
     fn env_var_completer_multiple_values() {
-        let mut env = HashMap::new();
+        let mut env = Env::default();
         env.insert("HELLO".to_string(), "0".to_string());
         env.insert("HEY".to_string(), "1".to_string());
         env.insert("HAND".to_string(), "2".to_string());
@@ -359,7 +358,7 @@ mod tests {
 
     #[test]
     fn env_var_completer_bracket_var() {
-        let mut env = HashMap::new();
+        let mut env = Env::default();
         env.insert("HELLO".to_string(), "WORLD".to_string());
         create_test_editor_with_env!(editor; env);
 

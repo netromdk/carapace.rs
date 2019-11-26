@@ -34,12 +34,7 @@ impl Command for ExportCommand {
         }
 
         if self.args.is_empty() {
-            let ctx = prompt.context.borrow();
-            let mut keys: Vec<&String> = ctx.env.keys().peekable().collect();
-            keys.sort();
-            for k in &keys {
-                println!("{}={}", k, ctx.env[*k]);
-            }
+            prompt.context.borrow().env.print();
         } else {
             for var in &self.args {
                 let (k, v) = match var.find('=') {

@@ -1,9 +1,8 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
-use std::env;
 use std::rc::Rc;
 
 use crate::config::Config;
+use crate::env::Env;
 
 pub type Context = Rc<RefCell<ContextData>>;
 
@@ -20,7 +19,7 @@ pub struct ContextData {
     pub config: Config,
 
     /// Environment passed to newly spawned processes.
-    pub env: HashMap<String, String>,
+    pub env: Env,
 
     /// Extra trace option (set via `set -x`) outputs command trace to stdout.
     pub xtrace: bool,
@@ -38,7 +37,7 @@ impl ContextData {
         ContextData {
             verbose,
             config: Config::new(config_path),
-            env: env::vars().collect(),
+            env: Env::new(),
             xtrace: false,
             errexit: false,
             ignoreeof: false,
@@ -51,7 +50,7 @@ impl Default for ContextData {
         ContextData {
             verbose: 0,
             config: Config::default(),
-            env: HashMap::new(),
+            env: Env::default(),
             xtrace: false,
             errexit: false,
             ignoreeof: false,

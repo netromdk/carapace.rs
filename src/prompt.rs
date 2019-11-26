@@ -94,7 +94,7 @@ impl Prompt {
         }
 
         // Replace all `$VAR` and `${VAR}` occurrences with values from environment.
-        input = util::replace_vars(&input, &self.context.borrow().env);
+        input = self.context.borrow().env.replace_vars(&input);
 
         let mut values: Vec<String> = input.split_whitespace().map(|x| x.to_string()).collect();
 
@@ -107,12 +107,13 @@ impl Prompt {
             .filter_map(|v| {
                 let mut ctx = self.context.borrow_mut();
                 if abort_inline {
-                    return Some(util::replace_vars(&v, &ctx.env));
+                    return Some(ctx.env.replace_vars(&v));
                 }
                 if let Some(pos) = v.find('=') {
                     let (k, val) = (v[..pos].to_string(), v[pos + 1..].to_string());
                     if ctx.env.contains_key(&k) {
-                        self.restore_env.insert(k.clone(), ctx.env[&k].clone());
+                        self.restore_env
+                            .insert(k.clone(), ctx.env.as_ref()[&k].clone());
                     } else {
                         self.delete_env.insert(k.clone());
                     }
@@ -123,7 +124,8 @@ impl Prompt {
                     // exported aren't replaced. For instance, "B=2" must still be exported in "A=1
                     // export B=2".
                     abort_inline = true;
-                    Some(util::replace_vars(&v, &ctx.env))
+
+                    Some(ctx.env.replace_vars(&v))
                 }
             })
             .collect();
@@ -200,7 +202,7 @@ impl Prompt {
         let mut ctx = self.context.borrow_mut();
 
         for k in &self.delete_env {
-            ctx.env.remove(k.as_str());
+            ctx.env.remove(k);
         }
         self.delete_env.clear();
 
@@ -282,7 +284,7 @@ impl Prompt {
     fn load_env(&mut self) {
         for (k, v) in &self.context.borrow().config.env {
             let mut ctx = self.context.borrow_mut();
-            let v = util::replace_vars(v, &ctx.env);
+            let v = ctx.env.replace_vars(v);
             ctx.env.insert(k.clone(), v);
         }
     }
