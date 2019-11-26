@@ -7,10 +7,10 @@ use std::collections::HashMap;
 lazy_static! {
     static ref WORD_REGEX: Regex = Regex::new(r"(\w+)").unwrap();
     static ref GLOB_REGEX: Regex = Regex::new(r"(([\w\d.\\/\.]*\*[\w\d.\\/\.]*)+)").unwrap();
-    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$[\w\?#!\$_@\*]*)").unwrap();
-    static ref BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{([\w\?#!\$_@\*]+)\})").unwrap();
+    static ref ENV_VAR_REGEX: Regex = Regex::new(r"(\$[\w\?\-#!\$_@\*]*)").unwrap();
+    static ref BRACKET_ENV_VAR_REGEX: Regex = Regex::new(r"(\$\{([\w\?\-#!\$_@\*]+)\})").unwrap();
     static ref PARTIAL_BRACKET_ENV_VAR_REGEX: Regex =
-        Regex::new(r"(\$\{([\w\?#!\$_@\*]*)\}?)").unwrap();
+        Regex::new(r"(\$\{([\w\?\-#!\$_@\*]*)\}?)").unwrap();
 }
 
 /// Check if `pos`ition is within first word in `text`.
@@ -145,6 +145,40 @@ pub fn expand_glob(input: &str) -> Vec<String> {
     res
 }
 
+/// Append value to value at key but only if current value doesn't already contain input value.
+/** If key doesn't exist then an empty string entry will be created. */
+pub fn append_value_for_key<S: ::std::hash::BuildHasher>(
+    append: &str,
+    key: &str,
+    map: &mut HashMap<String, String, S>,
+) {
+    if !map.contains_key(key) {
+        map.insert(key.to_string(), "".to_string());
+    }
+    let old_value = map[key].clone();
+    if !old_value.contains(append) {
+        map.insert(key.to_string(), old_value + append);
+    }
+}
+
+/// Replace value with another value for value at key but only if current value already is
+/// contained.
+/** If key doesn't exist then an empty string entry will be created. */
+pub fn replace_value_for_key<S: ::std::hash::BuildHasher>(
+    replace: &str,
+    with: &str,
+    key: &str,
+    map: &mut HashMap<String, String, S>,
+) {
+    if !map.contains_key(key) {
+        map.insert(key.to_string(), "".to_string());
+    }
+    let old_value = map[key].clone();
+    if old_value.contains(replace) {
+        map.insert(key.to_string(), old_value.replace(replace, with));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -240,6 +274,11 @@ mod tests {
     }
 
     #[test]
+    fn env_var_at_pos_dollar_dash() {
+        assert_eq!(env_var_at_pos(6, "hello $- and universe"), "$-");
+    }
+
+    #[test]
     fn bracket_env_var_at_pos_start() {
         assert_eq!(env_var_at_pos(6, "hello ${world} and universe"), "${world}");
     }
@@ -293,8 +332,13 @@ mod tests {
     }
 
     #[test]
-    fn partial_env_var_at_pos_only_dollar_sign_and_bracket() {
+    fn partial_env_var_at_pos_only_dollar_sign_bracket() {
         assert_eq!(partial_env_var_at_pos(6, "hello ${  and universe"), "${");
+    }
+
+    #[test]
+    fn partial_env_var_at_pos_only_dollar_sign_bracket_dash() {
+        assert_eq!(partial_env_var_at_pos(6, "hello ${-  and universe"), "${-");
     }
 
     #[test]
@@ -379,5 +423,56 @@ mod tests {
         vars.insert("USERNAME".to_string(), "foobar".to_string());
         let output = replace_vars(&input, &vars);
         assert_eq!(output, "foobar".to_string());
+    }
+
+    #[test]
+    fn append_value_for_key_with_no_value() {
+        let env = &mut HashMap::new();
+        append_value_for_key("a", "foo", env);
+        assert!(env.contains_key("foo"));
+        assert_eq!("a", env["foo"]);
+    }
+
+    #[test]
+    fn append_value_for_key_with_prior_value() {
+        let env = &mut HashMap::new();
+        env.insert("foo".to_string(), "a".to_string());
+        append_value_for_key("b", "foo", env);
+        assert!(env.contains_key("foo"));
+        assert_eq!("ab", env["foo"]);
+    }
+
+    #[test]
+    fn dont_append_value_for_key_if_value_exits() {
+        let env = &mut HashMap::new();
+        env.insert("foo".to_string(), "a".to_string());
+        append_value_for_key("a", "foo", env);
+        assert!(env.contains_key("foo"));
+        assert_eq!("a", env["foo"]);
+    }
+
+    #[test]
+    fn replace_value_for_key_with_no_value() {
+        let env = &mut HashMap::new();
+        replace_value_for_key("a", "b", "foo", env);
+        assert!(env.contains_key("foo"));
+        assert_eq!("", env["foo"]);
+    }
+
+    #[test]
+    fn replace_value_for_key_with_prior_value() {
+        let env = &mut HashMap::new();
+        env.insert("foo".to_string(), "a".to_string());
+        replace_value_for_key("a", "b", "foo", env);
+        assert!(env.contains_key("foo"));
+        assert_eq!("b", env["foo"]);
+    }
+
+    #[test]
+    fn dont_replace_value_for_key_if_value_doesnt_exists() {
+        let env = &mut HashMap::new();
+        replace_value_for_key("a", "b", "foo", env);
+        assert!(env.contains_key("foo"));
+        assert_eq!("", env["foo"]);
     }
 }

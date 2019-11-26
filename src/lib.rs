@@ -40,6 +40,7 @@ pub mod prompt;
 pub mod util;
 
 use crate::prompt::Prompt;
+use crate::util::append_value_for_key;
 
 use clap::ArgMatches;
 
@@ -56,11 +57,14 @@ pub fn repl(arg_matches: &ArgMatches) -> i32 {
         return 1;
     }
 
-    let context = context::new(
-        arg_matches.occurrences_of("verbose"),
-        arg_matches.value_of("config"),
-    );
+    let verbose_level = arg_matches.occurrences_of("verbose");
+    let context = context::new(verbose_level, arg_matches.value_of("config"));
     let mut prompt = Prompt::new(context);
+
+    // Append "v" to $- if verbose is set. This compliments the set command.
+    if verbose_level > 0 {
+        append_value_for_key("v", "-", &mut prompt.context.borrow_mut().env);
+    }
 
     // If -c <command> is specified then run command and exit.
     if let Some(command) = arg_matches.value_of("command") {

@@ -21,6 +21,16 @@ pub struct ContextData {
 
     /// Environment passed to newly spawned processes.
     pub env: HashMap<String, String>,
+
+    /// Extra trace option (set via `set -x`) outputs command trace to stdout.
+    pub xtrace: bool,
+
+    /// Whether or not to exit shell immediately if a command exit with non-zero status
+    /// (set via `set -e`).
+    pub errexit: bool,
+
+    /// Whether or not to not exit shell when reading EOF.
+    pub ignoreeof: bool,
 }
 
 impl ContextData {
@@ -29,6 +39,9 @@ impl ContextData {
             verbose,
             config: Config::new(config_path),
             env: env::vars().collect(),
+            xtrace: false,
+            errexit: false,
+            ignoreeof: false,
         }
     }
 }
@@ -39,6 +52,9 @@ impl Default for ContextData {
             verbose: 0,
             config: Config::default(),
             env: HashMap::new(),
+            xtrace: false,
+            errexit: false,
+            ignoreeof: false,
         }
     }
 }

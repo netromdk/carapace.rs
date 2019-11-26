@@ -28,15 +28,24 @@ impl Command for GeneralCommand {
         match output {
             Ok(output) => {
                 // Update $? with exit code.
-                ctx.env.insert(
-                    "?".to_string(),
-                    output.status.code().unwrap_or(0).to_string(),
-                );
-                Ok(output.status.success())
+                let code = output.status.code().unwrap_or(0);
+                ctx.env.insert("?".to_string(), code.to_string());
+
+                // Exit immediately if errexit option enabled.
+                let success = output.status.success();
+                if ctx.errexit && !success {
+                    Err(code)
+                } else {
+                    Ok(success)
+                }
             }
             Err(err) => {
                 println!("{}", err);
-                Ok(false)
+                if ctx.errexit {
+                    Err(1)
+                } else {
+                    Ok(false)
+                }
             }
         }
     }
