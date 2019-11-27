@@ -5,6 +5,7 @@ use rustyline::hint::Hinter;
 use rustyline::{Config, Editor, Helper};
 
 use crate::context::Context;
+use crate::env::Env;
 use crate::util;
 
 /// Creates `Editor` instance with proper config and completion.
@@ -86,7 +87,7 @@ impl EditorHelper {
     fn env_var_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
         let mut candidates = Vec::new();
 
-        let word = util::partial_env_var_at_pos(pos, line);
+        let word = Env::partial_var_at_pos(pos, line);
         if word.is_empty() {
             return candidates;
         }
