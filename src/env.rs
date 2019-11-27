@@ -127,48 +127,46 @@ impl Env {
         res
     }
 
-    // TODO: -> Option<String>
     /// Returns environment variable at position in text.
-    pub fn var_at_pos(pos: usize, text: &str) -> Value {
+    pub fn var_at_pos(pos: usize, text: &str) -> Option<Value> {
         assert!(pos <= text.len());
         for cap in BRACKET_ENV_VAR_REGEX.captures_iter(text) {
             let cap0 = cap.get(0).unwrap();
             let cap1 = cap.get(1);
             if pos >= cap0.start() && pos <= cap0.end() {
                 if let Some(cap1_val) = cap1 {
-                    return cap1_val.as_str().to_string();
+                    return Some(cap1_val.as_str().to_string());
                 }
             }
         }
         for cap in ENV_VAR_REGEX.captures_iter(text) {
             let cap = cap.get(0).unwrap();
             if pos >= cap.start() && pos <= cap.end() {
-                return cap.as_str().to_string();
+                return Some(cap.as_str().to_string());
             }
         }
-        "".to_string()
+        None
     }
 
-    // TODO: return Option<Value>
     /// Returns partial environment variable at position in text.
-    pub fn partial_var_at_pos(pos: usize, text: &str) -> Value {
+    pub fn partial_var_at_pos(pos: usize, text: &str) -> Option<Value> {
         assert!(pos <= text.len());
         for cap in PARTIAL_BRACKET_ENV_VAR_REGEX.captures_iter(text) {
             let cap0 = cap.get(0).unwrap();
             let cap1 = cap.get(1);
             if pos >= cap0.start() && pos <= cap0.end() {
                 if let Some(cap1_val) = cap1 {
-                    return cap1_val.as_str().to_string();
+                    return Some(cap1_val.as_str().to_string());
                 }
             }
         }
         for cap in ENV_VAR_REGEX.captures_iter(text) {
             let cap = cap.get(0).unwrap();
             if pos >= cap.start() && pos <= cap.end() {
-                return cap.as_str().to_string();
+                return Some(cap.as_str().to_string());
             }
         }
-        "".to_string()
+        None
     }
 }
 
@@ -362,7 +360,7 @@ mod tests {
     fn partial_env_var_at_pos_start() {
         assert_eq!(
             Env::partial_var_at_pos(6, "hello ${world and universe"),
-            "${world"
+            Some("${world".to_string())
         );
     }
 
@@ -370,7 +368,7 @@ mod tests {
     fn partial_env_var_at_pos_middle() {
         assert_eq!(
             Env::partial_var_at_pos(9, "hello ${world and universe"),
-            "${world"
+            Some("${world".to_string())
         );
     }
 
@@ -378,7 +376,7 @@ mod tests {
     fn partial_env_var_at_pos_end() {
         assert_eq!(
             Env::partial_var_at_pos(12, "hello ${world and universe"),
-            "${world"
+            Some("${world".to_string())
         );
     }
 
@@ -386,65 +384,92 @@ mod tests {
     fn partial_env_var_at_pos_can_yield_full_match() {
         assert_eq!(
             Env::partial_var_at_pos(9, "hello ${world} and universe"),
-            "${world}"
+            Some("${world}".to_string())
         );
     }
 
     #[test]
     fn partial_env_var_at_pos_only_dollar_sign_bracket() {
-        assert_eq!(Env::partial_var_at_pos(6, "hello ${  and universe"), "${");
+        assert_eq!(
+            Env::partial_var_at_pos(6, "hello ${  and universe"),
+            Some("${".to_string())
+        );
     }
 
     #[test]
     fn partial_env_var_at_pos_only_dollar_sign_bracket_dash() {
-        assert_eq!(Env::partial_var_at_pos(6, "hello ${-  and universe"), "${-");
+        assert_eq!(
+            Env::partial_var_at_pos(6, "hello ${-  and universe"),
+            Some("${-".to_string())
+        );
     }
 
     #[test]
     fn env_var_at_pos_beginning() {
-        assert_eq!(Env::var_at_pos(0, "$hello world and universe"), "$hello");
+        assert_eq!(
+            Env::var_at_pos(0, "$hello world and universe"),
+            Some("$hello".to_string())
+        );
     }
 
     #[test]
     fn env_var_at_pos_start() {
-        assert_eq!(Env::var_at_pos(6, "hello $world and universe"), "$world");
+        assert_eq!(
+            Env::var_at_pos(6, "hello $world and universe"),
+            Some("$world".to_string())
+        );
     }
 
     #[test]
     fn env_var_at_pos_middle() {
-        assert_eq!(Env::var_at_pos(2, "$hello world and universe"), "$hello");
+        assert_eq!(
+            Env::var_at_pos(2, "$hello world and universe"),
+            Some("$hello".to_string())
+        );
     }
 
     #[test]
     fn env_var_at_pos_end() {
-        assert_eq!(Env::var_at_pos(11, "hello $world and universe"), "$world");
+        assert_eq!(
+            Env::var_at_pos(11, "hello $world and universe"),
+            Some("$world".to_string())
+        );
     }
 
     #[test]
     fn env_var_at_pos_right_after() {
-        assert_eq!(Env::var_at_pos(12, "hello $world and universe"), "$world");
+        assert_eq!(
+            Env::var_at_pos(12, "hello $world and universe"),
+            Some("$world".to_string())
+        );
     }
 
     #[test]
     fn env_var_at_pos_after() {
-        assert_eq!(Env::var_at_pos(13, "hello $world  and universe"), "");
+        assert_eq!(Env::var_at_pos(13, "hello $world  and universe"), None);
     }
 
     #[test]
     fn env_var_at_pos_only_dollar_sign() {
-        assert_eq!(Env::var_at_pos(6, "hello $  and universe"), "$");
+        assert_eq!(
+            Env::var_at_pos(6, "hello $  and universe"),
+            Some("$".to_string())
+        );
     }
 
     #[test]
     fn env_var_at_pos_dollar_dash() {
-        assert_eq!(Env::var_at_pos(6, "hello $- and universe"), "$-");
+        assert_eq!(
+            Env::var_at_pos(6, "hello $- and universe"),
+            Some("$-".to_string())
+        );
     }
 
     #[test]
     fn bracket_env_var_at_pos_start() {
         assert_eq!(
             Env::var_at_pos(6, "hello ${world} and universe"),
-            "${world}"
+            Some("${world}".to_string())
         );
     }
 
@@ -452,7 +477,7 @@ mod tests {
     fn bracket_env_var_at_pos_middle() {
         assert_eq!(
             Env::var_at_pos(10, "hello ${world} and universe"),
-            "${world}"
+            Some("${world}".to_string())
         );
     }
 
@@ -460,7 +485,7 @@ mod tests {
     fn bracket_env_var_at_pos_end() {
         assert_eq!(
             Env::var_at_pos(13, "hello ${world} and universe"),
-            "${world}"
+            Some("${world}".to_string())
         );
     }
 }
