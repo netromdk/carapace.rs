@@ -220,6 +220,12 @@ impl Command for SetCommand {
     }
 }
 
+impl CommandAliases for SetCommand {
+    fn aliases() -> Vec<String> {
+        vec!["set".to_string()]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

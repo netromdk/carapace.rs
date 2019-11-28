@@ -38,15 +38,36 @@ pub trait Command {
     fn as_any(&self) -> &dyn Any;
 }
 
+/// Commands define their name and aliases with the CommandAliases trait.
+pub trait CommandAliases {
+    fn aliases() -> Vec<String>;
+}
+
+/// Builtin command names and aliases of the shell.
+pub fn builtins() -> Vec<String> {
+    vec![
+        CdCommand::aliases(),
+        ExitCommand::aliases(),
+        ExportCommand::aliases(),
+        HistoryCommand::aliases(),
+        QuitCommand::aliases(),
+        SetCommand::aliases(),
+        UnsetCommand::aliases(),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
 /// Create command instance from `program` and `args`.
 pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
     match program.as_ref() {
         "cd" => Box::new(CdCommand::new(args)),
         "exit" => Box::new(ExitCommand::new(args)),
         "export" => Box::new(ExportCommand::new(args)),
-        "set" => Box::new(SetCommand::new(args)),
         "history" | "hist" | "h" => Box::new(HistoryCommand::new(args)),
         "quit" => Box::new(QuitCommand {}),
+        "set" => Box::new(SetCommand::new(args)),
         "unset" => Box::new(UnsetCommand::new(args)),
         _ => Box::new(GeneralCommand::new(program, args)),
     }
@@ -77,6 +98,18 @@ pub fn execute(cmd: PromptResult, prompt: &mut Prompt) -> Option<i32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn check_builtins() {
+        // The order is important!
+        let cmds: Vec<String> = vec![
+            "cd", "exit", "export", "h", "hist", "history", "quit", "set", "unset",
+        ]
+        .into_iter()
+        .map(|x| x.to_string())
+        .collect();
+        assert_eq!(cmds, builtins());
+    }
 
     #[test]
     fn parse_quit() {
@@ -134,5 +167,26 @@ mod tests {
         let cmd = cmd.unwrap();
         assert_eq!(cmd.program, prog);
         assert_eq!(cmd.args, args);
+    }
+
+    #[test]
+    fn parse_set() {
+        let cmd = parse(String::from("set"), vec![]);
+        let cmd = cmd.as_any().downcast_ref::<SetCommand>();
+        assert!(cmd.is_some());
+    }
+
+    #[test]
+    fn parse_unset() {
+        let cmd = parse(String::from("unset"), vec![]);
+        let cmd = cmd.as_any().downcast_ref::<UnsetCommand>();
+        assert!(cmd.is_some());
+    }
+
+    #[test]
+    fn parse_export() {
+        let cmd = parse(String::from("export"), vec![]);
+        let cmd = cmd.as_any().downcast_ref::<ExportCommand>();
+        assert!(cmd.is_some());
     }
 }

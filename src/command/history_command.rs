@@ -59,3 +59,13 @@ impl Command for HistoryCommand {
         self
     }
 }
+
+impl CommandAliases for HistoryCommand {
+    fn aliases() -> Vec<String> {
+        // NOTE: The order is very important!
+        vec!["h", "hist", "history"]
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect()
+    }
+}

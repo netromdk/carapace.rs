@@ -39,3 +39,9 @@ impl Command for UnsetCommand {
         self
     }
 }
+
+impl CommandAliases for UnsetCommand {
+    fn aliases() -> Vec<String> {
+        vec!["unset".to_string()]
+    }
+}

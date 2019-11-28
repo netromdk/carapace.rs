@@ -12,3 +12,9 @@ impl Command for QuitCommand {
         self
     }
 }
+
+impl CommandAliases for QuitCommand {
+    fn aliases() -> Vec<String> {
+        vec!["quit".to_string()]
+    }
+}

@@ -51,3 +51,9 @@ impl Command for ExportCommand {
         self
     }
 }
+
+impl CommandAliases for ExportCommand {
+    fn aliases() -> Vec<String> {
+        vec!["export".to_string()]
+    }
+}

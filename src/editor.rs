@@ -4,6 +4,7 @@ use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::{Config, Editor, Helper};
 
+use crate::command;
 use crate::context::Context;
 use crate::env::Env;
 use crate::util;
@@ -41,12 +42,8 @@ impl EditorHelper {
     }
 
     fn builtin_command_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
-        let mut builtins: Vec<String> = vec![
-            "cd", "exit", "export", "h", "hist", "history", "quit", "set", "unset",
-        ]
-        .into_iter()
-        .map(|x| x.to_string())
-        .collect();
+        // Start with builtin commands.
+        let mut builtins = command::builtins();
 
         // Add aliases, if any.
         let config = &self.context.borrow().config;
