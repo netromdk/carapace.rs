@@ -2,6 +2,7 @@ use regex::{Captures, Regex};
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::env;
+use std::fmt::{Display, Formatter, Result};
 use std::hash::Hash;
 use std::ops::Index;
 
@@ -90,14 +91,6 @@ impl Env {
         }
     }
 
-    pub fn print(&self) {
-        let mut keys: Vec<&Key> = self.env.keys().peekable().collect();
-        keys.sort();
-        for k in &keys {
-            println!("{}={}", k, self.env[*k]);
-        }
-    }
-
     /// Replaces all environment variables in \p data and returns resulting string.
     pub fn replace_vars<S>(&self, data: &S) -> Value
     where
@@ -175,6 +168,17 @@ impl Default for Env {
         Env {
             env: HashMap::new(),
         }
+    }
+}
+
+impl Display for Env {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        let mut keys: Vec<&Key> = self.env.keys().peekable().collect();
+        keys.sort();
+        for k in &keys {
+            writeln!(f, "{}={}", k, self.env[*k])?;
+        }
+        Ok(())
     }
 }
 

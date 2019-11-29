@@ -34,7 +34,7 @@ impl Command for ExportCommand {
         }
 
         if self.args.is_empty() {
-            prompt.context.borrow().env.print();
+            print!("{}", prompt.context.borrow().env);
         } else {
             for var in &self.args {
                 let (k, v) = match var.find('=') {
