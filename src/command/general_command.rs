@@ -20,7 +20,7 @@ impl Command for GeneralCommand {
         let output = process::Command::new(&self.program)
             .args(&self.args)
             .env_clear()
-            .envs(&ctx.env)
+            .envs(ctx.env.as_ref())
             // Inherit stdout/stderr so it is displayed with the shell, including term colors.
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())

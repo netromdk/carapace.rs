@@ -4,7 +4,9 @@ use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
 use rustyline::{Config, Editor, Helper};
 
+use crate::command;
 use crate::context::Context;
+use crate::env::Env;
 use crate::util;
 
 /// Creates `Editor` instance with proper config and completion.
@@ -40,12 +42,8 @@ impl EditorHelper {
     }
 
     fn builtin_command_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
-        let mut builtins: Vec<String> = vec![
-            "cd", "exit", "export", "h", "hist", "history", "quit", "set", "unset",
-        ]
-        .into_iter()
-        .map(|x| x.to_string())
-        .collect();
+        // Start with builtin commands.
+        let mut builtins = command::builtins();
 
         // Add aliases, if any.
         let config = &self.context.borrow().config;
@@ -83,35 +81,34 @@ impl EditorHelper {
         candidates
     }
 
-    fn env_var_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
-        let mut candidates = Vec::new();
+    fn env_var_completer(&self, line: &str, pos: usize) -> Option<Vec<Pair>> {
+        match Env::partial_var_at_pos(pos, line) {
+            None => None,
 
-        let word = util::partial_env_var_at_pos(pos, line);
-        if word.is_empty() {
-            return candidates;
-        }
+            Some(word) => {
+                let mut candidates = Vec::new();
+                for k in self.context.borrow().env.as_ref().keys() {
+                    let lookfor = format!("${}", k);
+                    let lookfor2 = format!("${{{}", k);
 
-        for k in self.context.borrow().env.keys() {
-            let lookfor = format!("${}", k);
-            let lookfor2 = format!("${{{}", k);
-
-            // Look for normal env var: $VAR
-            if lookfor.starts_with(&word) {
-                candidates.push(Pair {
-                    display: lookfor.clone(),
-                    replacement: lookfor[word.len()..].to_string(),
-                });
+                    // Look for normal env var: $VAR
+                    if lookfor.starts_with(&word) {
+                        candidates.push(Pair {
+                            display: lookfor.clone(),
+                            replacement: lookfor[word.len()..].to_string(),
+                        });
+                    }
+                    // Look for bracketed env var with no ending bracket: ${VAR
+                    else if lookfor2.starts_with(&word) && !word.ends_with('}') {
+                        candidates.push(Pair {
+                            display: lookfor2.clone() + "}",
+                            replacement: lookfor2[word.len()..].to_string() + "}",
+                        });
+                    }
+                }
+                Some(candidates)
             }
-            // Look for bracketed env var with no ending bracket: ${VAR
-            else if lookfor2.starts_with(&word) && !word.ends_with('}') {
-                candidates.push(Pair {
-                    display: lookfor2.clone() + "}",
-                    replacement: lookfor2[word.len()..].to_string() + "}",
-                });
-            }
         }
-
-        candidates
     }
 
     fn file_glob_completer(&self, line: &str, pos: usize) -> Option<(Pair, usize)> {
@@ -161,14 +158,17 @@ impl Completer for EditorHelper {
         }
 
         // Do environment variable completion.
-        let candidates = self.env_var_completer(line, pos);
-        if !candidates.is_empty() {
-            return Ok((pos, candidates));
-        }
+        match self.env_var_completer(line, pos) {
+            Some(candidates) => {
+                return Ok((pos, candidates));
+            }
 
-        // Do file glob completion.
-        if let Some((pair, glob_len)) = self.file_glob_completer(line, pos) {
-            return Ok((pos - glob_len, vec![pair]));
+            // Do file glob completion if not found.
+            None => {
+                if let Some((pair, glob_len)) = self.file_glob_completer(line, pos) {
+                    return Ok((pos - glob_len, vec![pair]));
+                }
+            }
         }
 
         // Otherwise, default to file completion.
@@ -189,9 +189,8 @@ impl Helper for EditorHelper {}
 mod tests {
     use super::*;
 
-    use std::collections::HashMap;
-
     use crate::context;
+    use crate::env::Env;
 
     macro_rules! create_test_editor {
         ($e:ident) => {
@@ -312,11 +311,15 @@ mod tests {
 
     #[test]
     fn env_var_completer_normal_var() {
-        let mut env = HashMap::new();
+        let mut env = Env::default();
         env.insert("HELLO".to_string(), "WORLD".to_string());
         create_test_editor_with_env!(editor; env);
 
-        let pairs = editor.helper().unwrap().env_var_completer("echo $HE", 8);
+        let pairs = editor
+            .helper()
+            .unwrap()
+            .env_var_completer("echo $HE", 8)
+            .unwrap();
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "$HELLO");
         assert_eq!(&pairs[0].replacement, "LLO");
@@ -324,13 +327,17 @@ mod tests {
 
     #[test]
     fn env_var_completer_multiple_values() {
-        let mut env = HashMap::new();
+        let mut env = Env::default();
         env.insert("HELLO".to_string(), "0".to_string());
         env.insert("HEY".to_string(), "1".to_string());
         env.insert("HAND".to_string(), "2".to_string());
         create_test_editor_with_env!(editor; env);
 
-        let pairs = editor.helper().unwrap().env_var_completer("echo $H", 7);
+        let pairs = editor
+            .helper()
+            .unwrap()
+            .env_var_completer("echo $H", 7)
+            .unwrap();
         assert_eq!(pairs.len(), 3);
 
         let contains = |needle: &Pair| {
@@ -359,11 +366,15 @@ mod tests {
 
     #[test]
     fn env_var_completer_bracket_var() {
-        let mut env = HashMap::new();
+        let mut env = Env::default();
         env.insert("HELLO".to_string(), "WORLD".to_string());
         create_test_editor_with_env!(editor; env);
 
-        let pairs = editor.helper().unwrap().env_var_completer("echo ${HE", 9);
+        let pairs = editor
+            .helper()
+            .unwrap()
+            .env_var_completer("echo ${HE", 9)
+            .unwrap();
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "${HELLO}");
         assert_eq!(&pairs[0].replacement, "LLO}");

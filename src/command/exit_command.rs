@@ -54,6 +54,12 @@ impl Command for ExitCommand {
     }
 }
 
+impl CommandAliases for ExitCommand {
+    fn aliases() -> Vec<String> {
+        vec!["exit".to_string()]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

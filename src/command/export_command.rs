@@ -34,12 +34,7 @@ impl Command for ExportCommand {
         }
 
         if self.args.is_empty() {
-            let ctx = prompt.context.borrow();
-            let mut keys: Vec<&String> = ctx.env.keys().peekable().collect();
-            keys.sort();
-            for k in &keys {
-                println!("{}={}", k, ctx.env[*k]);
-            }
+            print!("{}", prompt.context.borrow().env);
         } else {
             for var in &self.args {
                 let (k, v) = match var.find('=') {
@@ -54,5 +49,11 @@ impl Command for ExportCommand {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl CommandAliases for ExportCommand {
+    fn aliases() -> Vec<String> {
+        vec!["export".to_string()]
     }
 }

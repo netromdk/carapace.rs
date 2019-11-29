@@ -1,7 +1,5 @@
 use super::*;
 
-use crate::util::{append_value_for_key, replace_value_for_key};
-
 use clap::{App, AppSettings, Arg};
 
 use rustyline::config::Configurer;
@@ -96,9 +94,9 @@ EXAMPLES:
                 // Add or remove the option from $-.
                 let env = &mut ctx.env;
                 if enable {
-                    append_value_for_key(opt, "-", env);
+                    env.append("-", opt.to_string());
                 } else {
-                    replace_value_for_key(opt, "", "-", env);
+                    env.replace("-", opt.to_string(), "".to_string());
                 }
 
                 if opt == "x" {
@@ -139,7 +137,7 @@ impl Command for SetCommand {
         // -v..
         else if m.is_present("verbose") {
             let mut ctx = prompt.context.borrow_mut();
-            append_value_for_key("v", "-", &mut ctx.env);
+            ctx.env.append("-", "v".to_string());
 
             let level = m.occurrences_of("verbose");
             ctx.verbose = level;
@@ -219,6 +217,12 @@ impl Command for SetCommand {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl CommandAliases for SetCommand {
+    fn aliases() -> Vec<String> {
+        vec!["set".to_string()]
     }
 }
 

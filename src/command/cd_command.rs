@@ -74,6 +74,12 @@ impl Command for CdCommand {
     }
 }
 
+impl CommandAliases for CdCommand {
+    fn aliases() -> Vec<String> {
+        vec!["cd".to_string()]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
