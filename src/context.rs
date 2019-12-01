@@ -3,6 +3,7 @@ use std::rc::Rc;
 
 use crate::config::Config;
 use crate::env::Env;
+use crate::path_commands::PathCommands;
 
 pub type Context = Rc<RefCell<ContextData>>;
 
@@ -21,6 +22,9 @@ pub struct ContextData {
     /// Environment passed to newly spawned processes.
     pub env: Env,
 
+    /// Commands detected in $PATH.
+    pub commands: PathCommands,
+
     /// Extra trace option (set via `set -x`) outputs command trace to stdout.
     pub xtrace: bool,
 
@@ -38,6 +42,7 @@ impl ContextData {
             verbose,
             config: Config::new(config_path),
             env: Env::new(),
+            commands: PathCommands::new(),
             xtrace: false,
             errexit: false,
             ignoreeof: false,
@@ -51,6 +56,7 @@ impl Default for ContextData {
             verbose: 0,
             config: Config::default(),
             env: Env::default(),
+            commands: PathCommands::default(),
             xtrace: false,
             errexit: false,
             ignoreeof: false,
