@@ -17,37 +17,44 @@ impl GeneralCommand {
 impl Command for GeneralCommand {
     fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         let mut ctx = prompt.context.borrow_mut();
-        let output = process::Command::new(&self.program)
+
+        // Spawn child process and inherit stdout/stderr so it is displayed within carapace,
+        // including term colors.
+        let proc = process::Command::new(&self.program)
             .args(&self.args)
             .env_clear()
             .envs(ctx.env.as_ref())
-            // Inherit stdout/stderr so it is displayed with the shell, including term colors.
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
-            .output();
-        match output {
-            Ok(output) => {
-                // Update $? with exit code.
-                let code = output.status.code().unwrap_or(0);
-                ctx.env.insert("?".to_string(), code.to_string());
+            .spawn();
 
-                // Exit immediately if errexit option enabled.
-                let success = output.status.success();
-                if ctx.errexit && !success {
-                    Err(code)
-                } else {
-                    Ok(success)
+        match proc {
+            Ok(mut child) => {
+                // Wait for child process to exit.
+                if let Ok(status) = child.wait() {
+                    // Update $? with exit code.
+                    let code = status.code().unwrap_or(0);
+                    ctx.env.insert("?".to_string(), code.to_string());
+
+                    // Exit immediately if errexit option enabled.
+                    let success = status.success();
+                    if ctx.errexit && !success {
+                        return Err(code);
+                    } else {
+                        return Ok(success);
+                    }
                 }
             }
             Err(err) => {
                 println!("{}", err);
                 if ctx.errexit {
-                    Err(1)
-                } else {
-                    Ok(false)
+                    return Err(1);
                 }
             }
         }
+
+        // Program could not be started.
+        Ok(false)
     }
 
     fn as_any(&self) -> &dyn Any {
