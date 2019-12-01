@@ -47,12 +47,16 @@ impl EditorHelper {
 
         // Add aliases, if any.
         for alias in self.context.borrow().config.aliases.keys() {
-            cmds.push(alias.clone());
+            if !cmds.contains(&alias) {
+                cmds.push(alias.clone());
+            }
         }
 
         // Add detected commands from PATH, if any.
         for cmd in self.context.borrow().commands.as_ref() {
-            cmds.push(cmd.clone());
+            if !cmds.contains(&cmd) {
+                cmds.push(cmd.clone());
+            }
         }
 
         let mut candidates = Vec::new();
