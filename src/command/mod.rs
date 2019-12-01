@@ -30,6 +30,9 @@ use self::set_command::SetCommand;
 pub mod rehash_command;
 use self::rehash_command::RehashCommand;
 
+pub mod hash_command;
+use self::hash_command::HashCommand;
+
 /// Base trait of all commands.
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
@@ -52,6 +55,7 @@ pub fn builtins() -> Vec<String> {
         CdCommand::aliases(),
         ExitCommand::aliases(),
         ExportCommand::aliases(),
+        HashCommand::aliases(),
         HistoryCommand::aliases(),
         QuitCommand::aliases(),
         RehashCommand::aliases(),
@@ -69,6 +73,7 @@ pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
         "cd" => Box::new(CdCommand::new(args)),
         "exit" => Box::new(ExitCommand::new(args)),
         "export" => Box::new(ExportCommand::new(args)),
+        "hash" => Box::new(HashCommand::new(args)),
         "history" | "hist" | "h" => Box::new(HistoryCommand::new(args)),
         "quit" => Box::new(QuitCommand {}),
         "rehash" => Box::new(RehashCommand {}),
@@ -108,7 +113,8 @@ mod tests {
     fn check_builtins() {
         // The order is important!
         let cmds: Vec<String> = vec![
-            "cd", "exit", "export", "h", "hist", "history", "quit", "rehash", "set", "unset",
+            "cd", "exit", "export", "hash", "h", "hist", "history", "quit", "rehash", "set",
+            "unset",
         ]
         .into_iter()
         .map(|x| x.to_string())
@@ -199,6 +205,13 @@ mod tests {
     fn parse_rehash() {
         let cmd = parse(String::from("rehash"), vec![]);
         let cmd = cmd.as_any().downcast_ref::<RehashCommand>();
+        assert!(cmd.is_some());
+    }
+
+    #[test]
+    fn parse_hash() {
+        let cmd = parse(String::from("hash"), vec![]);
+        let cmd = cmd.as_any().downcast_ref::<HashCommand>();
         assert!(cmd.is_some());
     }
 }

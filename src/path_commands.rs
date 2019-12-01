@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::BTreeSet;
 use std::env;
 use std::fs;
@@ -63,6 +64,14 @@ impl PathCommands {
 
     pub fn clear(&mut self) {
         self.commands.clear();
+    }
+
+    pub fn contains<S>(&self, value: &S) -> bool
+    where
+        S: ?Sized + Ord,
+        Value: Borrow<S>,
+    {
+        self.commands.contains(value)
     }
 }
 
@@ -133,5 +142,13 @@ mod tests {
 
         pc.clear();
         assert!(pc.is_empty());
+    }
+
+    #[test]
+    fn contains() {
+        let mut pc = PathCommands::default();
+        assert!(!pc.contains("foo"));
+        pc.insert("foo".to_string());
+        assert!(pc.contains("foo"));
     }
 }

@@ -225,7 +225,7 @@ mod tests {
     fn command_complete_no_input_all_candidates() {
         create_test_editor!(editor);
         let pairs = editor.helper().unwrap().command_completer("", 0);
-        assert_eq!(pairs.len(), 10);
+        assert_eq!(pairs.len(), 11);
     }
 
     #[test]
@@ -250,13 +250,15 @@ mod tests {
     fn command_complete_history_cmd_h() {
         create_test_editor!(editor);
         let pairs = editor.helper().unwrap().command_completer("h", 1);
-        assert_eq!(pairs.len(), 3);
-        assert_eq!(&pairs[0].display, "h");
-        assert_eq!(&pairs[0].replacement, "");
-        assert_eq!(&pairs[1].display, "hist");
-        assert_eq!(&pairs[1].replacement, "ist");
-        assert_eq!(&pairs[2].display, "history");
-        assert_eq!(&pairs[2].replacement, "istory");
+        assert_eq!(pairs.len(), 4);
+        assert_eq!(&pairs[0].display, "hash");
+        assert_eq!(&pairs[0].replacement, "ash");
+        assert_eq!(&pairs[1].display, "h");
+        assert_eq!(&pairs[1].replacement, "");
+        assert_eq!(&pairs[2].display, "hist");
+        assert_eq!(&pairs[2].replacement, "ist");
+        assert_eq!(&pairs[3].display, "history");
+        assert_eq!(&pairs[3].replacement, "istory");
     }
 
     #[test]
