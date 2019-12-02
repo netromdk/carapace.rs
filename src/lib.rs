@@ -37,6 +37,7 @@ pub mod config;
 pub mod context;
 pub mod editor;
 pub mod env;
+pub mod path_commands;
 pub mod prompt;
 pub mod util;
 

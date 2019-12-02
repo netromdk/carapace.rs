@@ -41,21 +41,29 @@ impl EditorHelper {
         }
     }
 
-    fn builtin_command_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
+    fn command_completer(&self, line: &str, pos: usize) -> Vec<Pair> {
         // Start with builtin commands.
-        let mut builtins = command::builtins();
+        let mut cmds = command::builtins();
 
         // Add aliases, if any.
-        let config = &self.context.borrow().config;
-        for k in config.aliases.keys() {
-            builtins.push(k.clone());
+        for alias in self.context.borrow().config.aliases.keys() {
+            if !cmds.contains(&alias) {
+                cmds.push(alias.clone());
+            }
+        }
+
+        // Add detected commands from PATH, if any.
+        for cmd in self.context.borrow().commands.as_ref() {
+            if !cmds.contains(&cmd) {
+                cmds.push(cmd.clone());
+            }
         }
 
         let mut candidates = Vec::new();
 
         // Show all candidates with no input and pos=0.
         if pos == 0 {
-            for builtin in &builtins {
+            for builtin in &cmds {
                 candidates.push(Pair {
                     display: builtin.to_string(),
                     replacement: builtin.to_string(),
@@ -65,7 +73,7 @@ impl EditorHelper {
         // Check for partial matches and their remainders.
         else {
             let slice = &line[..pos];
-            for builtin in &builtins {
+            for builtin in &cmds {
                 if *builtin == slice || builtin.starts_with(slice) {
                     let cmd = builtin.to_string();
                     candidates.push(Pair {
@@ -146,9 +154,9 @@ impl Completer for EditorHelper {
         pos: usize,
         ctx: &rustyline::Context,
     ) -> Result<(usize, Vec<Pair>), ReadlineError> {
-        // Do built-in command completion if position is within first word.
+        // Do built-in, alias, and PATH command completion if position is within first word.
         if util::in_first_word(pos, line) {
-            let candidates = self.builtin_command_completer(line, pos);
+            let candidates = self.command_completer(line, pos);
 
             // Only return candidates if more than none, otherwise default to file completion so it
             // can be done on the first word also.
@@ -207,48 +215,56 @@ mod tests {
         };
     }
 
-    #[test]
-    fn builtin_complete_no_input_all_candidates() {
-        create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("", 0);
-        assert_eq!(pairs.len(), 9);
+    macro_rules! create_test_editor_with_context {
+        ($e:ident; $ctx:expr) => {
+            let $e = create(&$ctx);
+        };
     }
 
     #[test]
-    fn builtin_complete_quit_cmd() {
+    fn command_complete_no_input_all_candidates() {
         create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("q", 1);
+        let pairs = editor.helper().unwrap().command_completer("", 0);
+        assert_eq!(pairs.len(), 11);
+    }
+
+    #[test]
+    fn command_complete_quit_cmd() {
+        create_test_editor!(editor);
+        let pairs = editor.helper().unwrap().command_completer("q", 1);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "quit");
         assert_eq!(&pairs[0].replacement, "uit");
     }
 
     #[test]
-    fn builtin_complete_exit_cmd() {
+    fn command_complete_exit_cmd() {
         create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("exi", 3);
+        let pairs = editor.helper().unwrap().command_completer("exi", 3);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "exit");
         assert_eq!(&pairs[0].replacement, "t");
     }
 
     #[test]
-    fn builtin_complete_history_cmd_h() {
+    fn command_complete_history_cmd_h() {
         create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("h", 1);
-        assert_eq!(pairs.len(), 3);
-        assert_eq!(&pairs[0].display, "h");
-        assert_eq!(&pairs[0].replacement, "");
-        assert_eq!(&pairs[1].display, "hist");
-        assert_eq!(&pairs[1].replacement, "ist");
-        assert_eq!(&pairs[2].display, "history");
-        assert_eq!(&pairs[2].replacement, "istory");
+        let pairs = editor.helper().unwrap().command_completer("h", 1);
+        assert_eq!(pairs.len(), 4);
+        assert_eq!(&pairs[0].display, "hash");
+        assert_eq!(&pairs[0].replacement, "ash");
+        assert_eq!(&pairs[1].display, "h");
+        assert_eq!(&pairs[1].replacement, "");
+        assert_eq!(&pairs[2].display, "hist");
+        assert_eq!(&pairs[2].replacement, "ist");
+        assert_eq!(&pairs[3].display, "history");
+        assert_eq!(&pairs[3].replacement, "istory");
     }
 
     #[test]
-    fn builtin_complete_history_cmd_hist() {
+    fn command_complete_history_cmd_hist() {
         create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("hi", 2);
+        let pairs = editor.helper().unwrap().command_completer("hi", 2);
         assert_eq!(pairs.len(), 2);
         assert_eq!(&pairs[0].display, "hist");
         assert_eq!(&pairs[0].replacement, "st");
@@ -257,56 +273,76 @@ mod tests {
     }
 
     #[test]
-    fn builtin_complete_history_cmd() {
+    fn command_complete_history_cmd() {
         create_test_editor!(editor);
-        let pairs = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("histo", 5);
+        let pairs = editor.helper().unwrap().command_completer("histo", 5);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "history");
         assert_eq!(&pairs[0].replacement, "ry");
     }
 
     #[test]
-    fn builtin_complete_unset_cmd() {
+    fn command_complete_unset_cmd() {
         create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("un", 2);
+        let pairs = editor.helper().unwrap().command_completer("un", 2);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "unset");
         assert_eq!(&pairs[0].replacement, "set");
     }
 
     #[test]
-    fn builtin_complete_export_cmd() {
+    fn command_complete_export_cmd() {
         create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("exp", 3);
+        let pairs = editor.helper().unwrap().command_completer("exp", 3);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "export");
         assert_eq!(&pairs[0].replacement, "ort");
     }
 
     #[test]
-    fn builtin_complete_export_cmd_set() {
+    fn command_complete_export_cmd_set() {
         create_test_editor!(editor);
-        let pairs = editor.helper().unwrap().builtin_command_completer("s", 1);
+        let pairs = editor.helper().unwrap().command_completer("s", 1);
         assert_eq!(pairs.len(), 1);
         assert_eq!(&pairs[0].display, "set");
         assert_eq!(&pairs[0].replacement, "et");
     }
 
     #[test]
-    fn builtin_complete_nothing_after_first_whitespace() {
+    fn command_complete_nothing_after_first_whitespace() {
         create_test_editor!(editor);
 
-        let pairs = editor.helper().unwrap().builtin_command_completer("ls ", 3);
+        let pairs = editor.helper().unwrap().command_completer("ls ", 3);
         assert_eq!(pairs.len(), 0);
 
-        let pairs = editor
-            .helper()
-            .unwrap()
-            .builtin_command_completer("ls -lg /", 8);
+        let pairs = editor.helper().unwrap().command_completer("ls -lg /", 8);
         assert_eq!(pairs.len(), 0);
+    }
+
+    #[test]
+    fn command_complete_detected_commands() {
+        let ctx = context::default();
+        {
+            let commands = &mut ctx.borrow_mut().commands;
+
+            // Add in reverse order but expect in sorted order.
+            commands.insert("whoami".to_string());
+            commands.insert("who".to_string());
+        }
+
+        create_test_editor_with_context!(editor; ctx);
+
+        let pairs = editor.helper().unwrap().command_completer("wh", 2);
+        assert_eq!(pairs.len(), 2);
+        assert_eq!(&pairs[0].display, "who");
+        assert_eq!(&pairs[0].replacement, "o");
+        assert_eq!(&pairs[1].display, "whoami");
+        assert_eq!(&pairs[1].replacement, "oami");
+
+        let pairs = editor.helper().unwrap().command_completer("whoa", 4);
+        assert_eq!(pairs.len(), 1);
+        assert_eq!(&pairs[0].display, "whoami");
+        assert_eq!(&pairs[0].replacement, "mi");
     }
 
     #[test]
