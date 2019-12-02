@@ -130,6 +130,11 @@ impl Prompt {
             })
             .collect();
 
+        // Values can be empty after substitution, like if $- = "" and input is "$-".
+        if values.is_empty() {
+            return Err(Box::new(NoCommandError));
+        }
+
         // Check if program is an alias, and substitute in values.
         if self
             .context
