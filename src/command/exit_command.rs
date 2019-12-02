@@ -39,13 +39,22 @@ impl ExitCommand {
 }
 
 impl Command for ExitCommand {
-    fn execute(&mut self, _prompt: &mut Prompt) -> Result<bool, i32> {
+    fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         let matches = self.app.get_matches_from_safe_borrow(&self.args);
         if let Err(err) = matches {
             println!("{}", err);
             return Ok(false);
         }
 
+        // Set the exit code to the previous command if it was not passed
+        // explicitly to exit.
+        if self.args.len() == 0 {
+            if let Some(c) = prompt.context.borrow().env.get("?") {
+                if let Ok(c) = c.parse::<i32>() {
+                    self.code = c
+                }
+            }
+        }
         Err(self.code)
     }
 
@@ -63,6 +72,7 @@ impl CommandAliases for ExitCommand {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::context;
 
     #[test]
     fn no_args_is_zero() {
@@ -80,5 +90,39 @@ mod tests {
     fn valid_arg() {
         let cmd = ExitCommand::new(vec![String::from("42")]);
         assert_eq!(cmd.code, 42);
+    }
+
+    #[test]
+    fn previous_cmd_exit_code() {
+        let mut prompt = Prompt::create(context::default());
+        prompt
+            .context
+            .borrow_mut()
+            .env
+            .insert("?".to_string(), "1".to_string());
+
+        let mut cmd = ExitCommand::new(vec![]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_err());
+        assert_eq!(1, res.unwrap_err());
+        assert_eq!(cmd.code, 1)
+    }
+
+    #[test]
+    fn previous_exit_code_with_exit_arg() {
+        let mut prompt = Prompt::create(context::default());
+        prompt
+            .context
+            .borrow_mut()
+            .env
+            .insert("?".to_string(), "0".to_string());
+
+        // Set the exit status code explicitly, which should ignore the previous
+        // command exit code stored in $? and return the exit status arg.
+        let mut cmd = ExitCommand::new(vec!["2".to_string()]);
+        let res = cmd.execute(&mut prompt);
+        assert!(res.is_err());
+        assert_eq!(2, res.unwrap_err());
+        assert_eq!(cmd.code, 2)
     }
 }
