@@ -44,7 +44,7 @@ impl Prompt {
     pub fn new(context: Context) -> Prompt {
         let mut p = Prompt::create(context);
         p.load_history();
-        p.load_env();
+        p.setup_env();
         p
     }
 
@@ -280,12 +280,15 @@ impl Prompt {
         }
     }
 
-    /// Load environment entries from config into session environment.
-    fn load_env(&mut self) {
-        for (k, v) in &self.context.borrow().config.env {
-            let mut ctx = self.context.borrow_mut();
-            let v = ctx.env.replace_vars(v);
-            ctx.env.insert(k.clone(), v);
+    fn setup_env(&mut self) {
+        let ctx = &mut self.context.borrow_mut();
+
+        let mut entries = HashMap::new();
+        for (k, v) in &ctx.config.env {
+            entries.insert(k.clone(), ctx.env.replace_vars(v));
+        }
+        for (k, v) in entries {
+            ctx.env.insert(k, v);
         }
     }
 }
@@ -490,5 +493,28 @@ mod tests {
         let ctx = prompt.context.borrow();
         assert!(ctx.env.contains_key("A"));
         assert_eq!(ctx.env.get("A"), Some(&"42".to_string()));
+    }
+
+    #[test]
+    fn setup_env() {
+        let ctx = context::default();
+
+        {
+            let mut ctx = ctx.borrow_mut();
+
+            let env = &mut ctx.env;
+            env.insert("A".to_string(), "42".to_string());
+            env.insert("B".to_string(), "84".to_string());
+
+            ctx.config
+                .env
+                .insert("HELLO".to_string(), "$A,${B}".to_string());
+        }
+
+        let mut prompt = Prompt::create(ctx);
+        prompt.setup_env();
+
+        assert!(env.contains_key("HELLO"));
+        assert_eq!("42,84", env["HELLO"]);
     }
 }
