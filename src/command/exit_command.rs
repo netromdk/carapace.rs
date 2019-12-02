@@ -46,9 +46,8 @@ impl Command for ExitCommand {
             return Ok(false);
         }
 
-        // Set the exit code to the previous command if it was not passed
-        // explicitly to exit.
-        if self.args.len() == 0 {
+        // Set the exit code to the previous command if it was not passed explicitly to exit.
+        if self.args.is_empty() {
             if let Some(c) = prompt.context.borrow().env.get("?") {
                 if let Ok(c) = c.parse::<i32>() {
                     self.code = c
