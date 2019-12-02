@@ -280,6 +280,8 @@ impl Prompt {
         }
     }
 
+    /// Load environment entries from config into session environment, and set $? = 0 and $- = "" or
+    /// "v" if verbose > 0.
     fn setup_env(&mut self) {
         let ctx = &mut self.context.borrow_mut();
 
@@ -292,6 +294,16 @@ impl Prompt {
         }
 
         ctx.env.insert("?".to_string(), "0".to_string());
+
+        let verbose = ctx.verbose;
+        ctx.env.insert(
+            "-".to_string(),
+            if verbose > 0 {
+                "v".to_string()
+            } else {
+                "".to_string()
+            },
+        );
     }
 }
 
@@ -523,7 +535,25 @@ mod tests {
         assert!(env.contains_key("?"));
         assert_eq!("0", env["?"]);
 
+        assert!(env.contains_key("-"));
+        assert_eq!("", env["-"]);
+
         assert!(env.contains_key("HELLO"));
         assert_eq!("42,84", env["HELLO"]);
+    }
+
+    #[test]
+    fn setup_env_verbose() {
+        let ctx = context::default();
+        ctx.borrow_mut().verbose = 1;
+
+        let mut prompt = Prompt::create(ctx);
+
+        // Set $- = "v" since verbose is set.
+        prompt.setup_env();
+
+        let env = &prompt.context.borrow().env;
+        assert!(env.contains_key("-"));
+        assert_eq!("v", env["-"]);
     }
 }
