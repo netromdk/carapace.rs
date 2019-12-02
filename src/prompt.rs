@@ -290,6 +290,8 @@ impl Prompt {
         for (k, v) in entries {
             ctx.env.insert(k, v);
         }
+
+        ctx.env.insert("?".to_string(), "0".to_string());
     }
 }
 
@@ -512,7 +514,14 @@ mod tests {
         }
 
         let mut prompt = Prompt::create(ctx);
+
+        // Setup env also loads eonv entries from config but substitutes known env values into them.
+        // And sets $? = 0.
         prompt.setup_env();
+
+        let env = &prompt.context.borrow().env;
+        assert!(env.contains_key("?"));
+        assert_eq!("0", env["?"]);
 
         assert!(env.contains_key("HELLO"));
         assert_eq!("42,84", env["HELLO"]);
