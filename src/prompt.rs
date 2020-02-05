@@ -3,7 +3,6 @@ use crate::context::Context;
 use crate::editor::{self, EditorHelper};
 use crate::util;
 
-use libc;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::error::Error;
