@@ -49,7 +49,7 @@ impl Prompt {
 
     /// Create prompt from context but don't load history or environment.
     pub fn create(context: Context) -> Prompt {
-        let editor = editor::create(&context.clone());
+        let editor = editor::create(&context);
         Prompt {
             context,
             editor,
