@@ -382,7 +382,7 @@ mod tests {
                     return true;
                 }
             }
-            return false;
+            false
         };
 
         // Cannot rely on the order of the vector due to the HashMap used internally.
