@@ -60,12 +60,12 @@ impl Config {
         let output = json::object![
             "max_history_size" => self.max_history_size,
             "edit_mode" => match self.edit_mode {
-                EditMode::Emacs => "emacs",
-                EditMode::Vi => "vi"
+                EditMode::Vi => "vi",
+                _ /*EditMode::Emacs*/ => "emacs",
             },
             "completion_type" => match self.completion_type {
-                CompletionType::List => "list",
                 CompletionType::Circular => "circular",
+                _ /*CompletionType::List*/ => "list",
             },
             "auto_cd" => self.auto_cd,
             "aliases" => util::hash_map_to_json(&self.aliases),
@@ -93,9 +93,9 @@ impl Config {
                         }
                         "completion_type" => {
                             self.completion_type = match value.as_str().unwrap_or("list") {
-                                        "circular" => CompletionType::Circular,
-                                        _ /*"list"*/ => CompletionType::List,
-                                    };
+                                "circular" => CompletionType::Circular,
+                                _ /*"list"*/ => CompletionType::List,
+                            };
                         }
                         "auto_cd" => {
                             self.auto_cd = value.as_bool().unwrap_or(true);
