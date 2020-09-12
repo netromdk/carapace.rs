@@ -2,6 +2,7 @@ use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::error::ReadlineError;
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
+use rustyline::validate::Validator;
 use rustyline::{Config, Editor, Helper};
 
 use crate::command;
@@ -190,8 +191,12 @@ impl Hinter for EditorHelper {
     }
 }
 
+/// Use defaults for these traits.
+//@{
 impl Highlighter for EditorHelper {}
 impl Helper for EditorHelper {}
+impl Validator for EditorHelper {}
+//@}
 
 #[cfg(test)]
 mod tests {
