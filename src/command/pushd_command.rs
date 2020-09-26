@@ -39,7 +39,7 @@ impl Command for PushdCommand {
         }
 
         if let Some(path) = &self.path {
-            if let Some(oldpwd) = util::set_cwd(Path::new(&path), prompt) {
+            if let Some(oldpwd) = prompt.set_cwd(Path::new(&path)) {
                 prompt.context.borrow_mut().dir_stack.push(oldpwd);
             }
         }

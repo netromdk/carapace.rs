@@ -2,7 +2,6 @@ use std::any::Any;
 use std::process;
 
 use super::prompt::{EofError, Prompt, PromptResult};
-use super::util;
 
 pub mod exit_command;
 use self::exit_command::ExitCommand;

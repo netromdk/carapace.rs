@@ -318,6 +318,28 @@ impl Prompt {
             },
         );
     }
+
+    /// Sets current working directory.
+    ///
+    /// Returns the old cwd on success and None otherwise.
+    pub fn set_cwd(&mut self, dir: &Path) -> Option<String> {
+        let fallback = "/";
+        let oldpwd = env::current_dir()
+            .unwrap_or_else(|_| Path::new(fallback).to_path_buf())
+            .to_str()
+            .unwrap_or(fallback)
+            .to_string();
+        if let Err(err) = env::set_current_dir(dir) {
+            println!("Could not change to {}: {}", dir.display(), err);
+            None
+        } else {
+            self.context
+                .borrow_mut()
+                .env
+                .insert("OLDPWD".to_string(), oldpwd.clone());
+            Some(oldpwd)
+        }
+    }
 }
 
 impl Drop for Prompt {

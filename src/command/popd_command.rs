@@ -9,7 +9,7 @@ impl Command for PopdCommand {
     fn execute(&mut self, prompt: &mut Prompt) -> Result<bool, i32> {
         let path = prompt.context.borrow_mut().dir_stack.pop();
         if let Some(path) = &path {
-            util::set_cwd(Path::new(&path), prompt);
+            prompt.set_cwd(Path::new(&path));
 
             let short = true;
             prompt.context.borrow().print_dir_stack(short);

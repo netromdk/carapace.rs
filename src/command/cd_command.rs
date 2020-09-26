@@ -42,10 +42,10 @@ impl Command for CdCommand {
 
         if self.path == "~" {
             let home_dir = dirs::home_dir().unwrap_or_default();
-            util::set_cwd(&home_dir, prompt);
+            prompt.set_cwd(&home_dir);
         } else {
             let path = Path::new(&self.path);
-            util::set_cwd(&path, prompt);
+            prompt.set_cwd(&path);
         }
         Ok(true)
     }
