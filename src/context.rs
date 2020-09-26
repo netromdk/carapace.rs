@@ -34,6 +34,9 @@ pub struct ContextData {
 
     /// Whether or not to not exit shell when reading EOF.
     pub ignoreeof: bool,
+
+    /// Stack of directories manipulated via `pushd` and `popd`.
+    pub dir_stack: Vec<String>,
 }
 
 impl ContextData {
@@ -46,6 +49,7 @@ impl ContextData {
             xtrace: false,
             errexit: false,
             ignoreeof: false,
+            dir_stack: Vec::new(),
         }
     }
 }
@@ -60,6 +64,7 @@ impl Default for ContextData {
             xtrace: false,
             errexit: false,
             ignoreeof: false,
+            dir_stack: Vec::new(),
         }
     }
 }
