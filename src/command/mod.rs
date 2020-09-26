@@ -84,7 +84,7 @@ pub fn builtins() -> Vec<String> {
 pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
     match program.as_ref() {
         "cd" => Box::new(CdCommand::new(args)),
-        "dirs" => Box::new(DirsCommand {}),
+        "dirs" => Box::new(DirsCommand::new(args)),
         "exit" => Box::new(ExitCommand::new(args)),
         "export" => Box::new(ExportCommand::new(args)),
         "hash" => Box::new(HashCommand::new(args)),

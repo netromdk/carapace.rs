@@ -52,6 +52,23 @@ impl ContextData {
             dir_stack: Vec::new(),
         }
     }
+
+    /// Prints directory stack to stdout.
+    ///
+    /// `short` means all on one line, otherwise a list.
+    pub fn print_dir_stack(&self, short: bool) {
+        if self.dir_stack.is_empty() {
+            return;
+        }
+
+        if short {
+            println!("{}", self.dir_stack.join(" "));
+        } else {
+            for (num, dir) in self.dir_stack.iter().enumerate() {
+                println!("{}:\t{}", num, dir);
+            }
+        }
+    }
 }
 
 impl Default for ContextData {

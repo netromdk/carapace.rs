@@ -45,9 +45,8 @@ impl Command for PushdCommand {
         }
 
         // Show stack in all cases.
-        // TODO: display more nicely later on
-        let ctx = prompt.context.borrow();
-        println!("{:?}", ctx.dir_stack);
+        let short = true;
+        prompt.context.borrow().print_dir_stack(short);
 
         Ok(true)
     }

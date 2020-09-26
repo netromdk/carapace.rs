@@ -10,12 +10,12 @@ impl Command for PopdCommand {
         let path = prompt.context.borrow_mut().dir_stack.pop();
         if let Some(path) = &path {
             util::set_cwd(Path::new(&path), prompt);
-        }
 
-        // Show stack in all cases.
-        // TODO: display more nicely later on
-        let ctx = prompt.context.borrow();
-        println!("{:?}", ctx.dir_stack);
+            let short = true;
+            prompt.context.borrow().print_dir_stack(short);
+        } else {
+            println!("Directory stack is empty");
+        }
 
         Ok(true)
     }
