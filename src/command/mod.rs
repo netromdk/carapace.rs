@@ -2,6 +2,7 @@ use std::any::Any;
 use std::process;
 
 use super::prompt::{EofError, Prompt, PromptResult};
+use super::util;
 
 pub mod exit_command;
 use self::exit_command::ExitCommand;
@@ -33,6 +34,9 @@ use self::rehash_command::RehashCommand;
 pub mod hash_command;
 use self::hash_command::HashCommand;
 
+pub mod pushd_command;
+use self::pushd_command::PushdCommand;
+
 pub mod dirs_command;
 use self::dirs_command::DirsCommand;
 
@@ -61,6 +65,7 @@ pub fn builtins() -> Vec<String> {
         ExportCommand::aliases(),
         HashCommand::aliases(),
         HistoryCommand::aliases(),
+        PushdCommand::aliases(),
         QuitCommand::aliases(),
         RehashCommand::aliases(),
         SetCommand::aliases(),
@@ -80,6 +85,7 @@ pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
         "export" => Box::new(ExportCommand::new(args)),
         "hash" => Box::new(HashCommand::new(args)),
         "history" | "hist" | "h" => Box::new(HistoryCommand::new(args)),
+        "pushd" => Box::new(PushdCommand::new(args)),
         "quit" => Box::new(QuitCommand {}),
         "rehash" => Box::new(RehashCommand {}),
         "set" => Box::new(SetCommand::new(args)),

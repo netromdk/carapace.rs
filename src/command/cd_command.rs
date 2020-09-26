@@ -1,6 +1,5 @@
 use super::*;
 
-use std::env;
 use std::path::Path;
 
 use clap::{App, AppSettings, Arg};
@@ -31,24 +30,6 @@ impl CdCommand {
 
         CdCommand { args, path, app }
     }
-
-    fn set_cwd(&self, dir: &Path, prompt: &mut Prompt) {
-        let fallback = "/";
-        let oldpwd = env::current_dir()
-            .unwrap_or_else(|_| Path::new(fallback).to_path_buf())
-            .to_str()
-            .unwrap_or(fallback)
-            .to_string();
-        if let Err(err) = env::set_current_dir(dir) {
-            println!("Could not change to {}: {}", dir.display(), err);
-        } else {
-            prompt
-                .context
-                .borrow_mut()
-                .env
-                .insert("OLDPWD".to_string(), oldpwd);
-        }
-    }
 }
 
 impl Command for CdCommand {
@@ -61,10 +42,10 @@ impl Command for CdCommand {
 
         if self.path == "~" {
             let home_dir = dirs::home_dir().unwrap_or_default();
-            self.set_cwd(&home_dir, prompt);
+            util::set_cwd(&home_dir, prompt);
         } else {
             let path = Path::new(&self.path);
-            self.set_cwd(&path, prompt);
+            util::set_cwd(&path, prompt);
         }
         Ok(true)
     }
