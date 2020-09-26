@@ -230,7 +230,7 @@ mod tests {
     fn command_complete_no_input_all_candidates() {
         create_test_editor!(editor);
         let pairs = editor.helper().unwrap().command_completer("", 0);
-        assert_eq!(pairs.len(), 11);
+        assert_eq!(pairs.len(), 14);
     }
 
     #[test]

@@ -129,8 +129,8 @@ mod tests {
     fn check_builtins() {
         // The order is important!
         let cmds: Vec<String> = vec![
-            "cd", "exit", "export", "hash", "h", "hist", "history", "quit", "rehash", "set",
-            "unset",
+            "cd", "dirs", "exit", "export", "hash", "h", "hist", "history", "popd", "pushd",
+            "quit", "rehash", "set", "unset",
         ]
         .into_iter()
         .map(|x| x.to_string())
