@@ -37,6 +37,9 @@ use self::hash_command::HashCommand;
 pub mod pushd_command;
 use self::pushd_command::PushdCommand;
 
+pub mod popd_command;
+use self::popd_command::PopdCommand;
+
 pub mod dirs_command;
 use self::dirs_command::DirsCommand;
 
@@ -65,6 +68,7 @@ pub fn builtins() -> Vec<String> {
         ExportCommand::aliases(),
         HashCommand::aliases(),
         HistoryCommand::aliases(),
+        PopdCommand::aliases(),
         PushdCommand::aliases(),
         QuitCommand::aliases(),
         RehashCommand::aliases(),
@@ -85,6 +89,7 @@ pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
         "export" => Box::new(ExportCommand::new(args)),
         "hash" => Box::new(HashCommand::new(args)),
         "history" | "hist" | "h" => Box::new(HistoryCommand::new(args)),
+        "popd" => Box::new(PopdCommand {}),
         "pushd" => Box::new(PushdCommand::new(args)),
         "quit" => Box::new(QuitCommand {}),
         "rehash" => Box::new(RehashCommand {}),
