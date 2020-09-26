@@ -61,11 +61,22 @@ impl ContextData {
             return;
         }
 
-        if short {
-            println!("{}", self.dir_stack.join(" "));
-        } else {
-            for (num, dir) in self.dir_stack.iter().enumerate() {
-                println!("{}:\t{}", num, dir);
+        let len = self.dir_stack.len();
+        for (num, dir) in self.dir_stack.iter().enumerate() {
+            if short {
+                if num == 0 && len == 1 {
+                    println!("{}", dir);
+                } else if num < len - 1 {
+                    print!("{} ", dir);
+                } else {
+                    println!("[{}]", dir);
+                }
+
+            // Long formats.
+            } else if num < len - 1 {
+                println!("{} \t{}", num, dir);
+            } else {
+                println!("{}>\t{}", num, dir);
             }
         }
     }
