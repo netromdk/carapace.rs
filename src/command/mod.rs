@@ -33,6 +33,9 @@ use self::rehash_command::RehashCommand;
 pub mod hash_command;
 use self::hash_command::HashCommand;
 
+pub mod dirs_command;
+use self::dirs_command::DirsCommand;
+
 /// Base trait of all commands.
 pub trait Command {
     /// Execute command and return `Ok(true)` if command was run successfully, `Ok(false)` if not,
@@ -53,6 +56,7 @@ pub trait CommandAliases {
 pub fn builtins() -> Vec<String> {
     vec![
         CdCommand::aliases(),
+        DirsCommand::aliases(),
         ExitCommand::aliases(),
         ExportCommand::aliases(),
         HashCommand::aliases(),
@@ -71,6 +75,7 @@ pub fn builtins() -> Vec<String> {
 pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
     match program.as_ref() {
         "cd" => Box::new(CdCommand::new(args)),
+        "dirs" => Box::new(DirsCommand {}),
         "exit" => Box::new(ExitCommand::new(args)),
         "export" => Box::new(ExportCommand::new(args)),
         "hash" => Box::new(HashCommand::new(args)),
