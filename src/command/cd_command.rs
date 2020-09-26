@@ -1,12 +1,13 @@
 use super::*;
 
-use std::path::Path;
+use std::path::PathBuf;
 
 use clap::{App, AppSettings, Arg};
 
 /// Cd command changes directory to defined path.
 pub struct CdCommand {
     pub path: String,
+    program: String,
     args: Vec<String>,
     app: App<'static, 'static>,
 }
@@ -15,9 +16,9 @@ impl CdCommand {
     /// If no arguments are passed the path will be "~", the home directory, otherwise it will be
     /// the first argument. *Note:* it is expected that all "~" have already been replaced. Only the
     /// placeholder "~" used with no arguments is kept to replace directly in `execute()`.
-    pub fn new(args: Vec<String>) -> CdCommand {
+    pub fn new(program: String, args: Vec<String>) -> CdCommand {
         let mut app = App::new("cd")
-            .about("Change directory.")
+            .about("Change directory and push to directory stack.")
             .setting(AppSettings::NoBinaryName)
             .setting(AppSettings::DisableVersion)
             .arg(Arg::with_name("directory").index(1).default_value("~"));
@@ -28,7 +29,12 @@ impl CdCommand {
             path = value.value_of("directory").unwrap().to_string();
         }
 
-        CdCommand { args, path, app }
+        CdCommand {
+            args,
+            program,
+            path,
+            app,
+        }
     }
 }
 
@@ -40,13 +46,21 @@ impl Command for CdCommand {
             return Ok(false);
         }
 
-        if self.path == "~" {
-            let home_dir = dirs::home_dir().unwrap_or_default();
-            prompt.set_cwd(&home_dir);
+        let path = if self.path == "~" {
+            dirs::home_dir().unwrap_or_default()
         } else {
-            let path = Path::new(&self.path);
-            prompt.set_cwd(&path);
+            PathBuf::from(&self.path)
+        };
+
+        if let Some(oldpwd) = prompt.set_cwd(&path) {
+            prompt.context.borrow_mut().dir_stack.push(oldpwd);
         }
+
+        if self.program == "pushd" {
+            let short = true;
+            prompt.context.borrow().print_dir_stack(short);
+        }
+
         Ok(true)
     }
 
@@ -57,7 +71,7 @@ impl Command for CdCommand {
 
 impl CommandAliases for CdCommand {
     fn aliases() -> Vec<String> {
-        vec!["cd".to_string()]
+        vec!["cd".to_string(), "pushd".to_string()]
     }
 }
 
@@ -67,13 +81,13 @@ mod tests {
 
     #[test]
     fn no_args_is_tilde() {
-        let cmd = CdCommand::new(vec![]);
+        let cmd = CdCommand::new("cd".to_string(), vec![]);
         assert_eq!(cmd.path, "~");
     }
 
     #[test]
     fn valid_arg() {
-        let cmd = CdCommand::new(vec![String::from("/tmp")]);
+        let cmd = CdCommand::new("cd".to_string(), vec![String::from("/tmp")]);
         assert_eq!(cmd.path, "/tmp");
     }
 }

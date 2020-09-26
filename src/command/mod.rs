@@ -33,9 +33,6 @@ use self::rehash_command::RehashCommand;
 pub mod hash_command;
 use self::hash_command::HashCommand;
 
-pub mod pushd_command;
-use self::pushd_command::PushdCommand;
-
 pub mod popd_command;
 use self::popd_command::PopdCommand;
 
@@ -68,7 +65,6 @@ pub fn builtins() -> Vec<String> {
         HashCommand::aliases(),
         HistoryCommand::aliases(),
         PopdCommand::aliases(),
-        PushdCommand::aliases(),
         QuitCommand::aliases(),
         RehashCommand::aliases(),
         SetCommand::aliases(),
@@ -82,14 +78,13 @@ pub fn builtins() -> Vec<String> {
 /// Create command instance from `program` and `args`.
 pub fn parse(program: String, args: Vec<String>) -> Box<dyn Command> {
     match program.as_ref() {
-        "cd" => Box::new(CdCommand::new(args)),
+        "cd" | "pushd" => Box::new(CdCommand::new(program, args)),
         "dirs" => Box::new(DirsCommand::new(args)),
         "exit" => Box::new(ExitCommand::new(args)),
         "export" => Box::new(ExportCommand::new(args)),
         "hash" => Box::new(HashCommand::new(args)),
         "history" | "hist" | "h" => Box::new(HistoryCommand::new(args)),
         "popd" => Box::new(PopdCommand {}),
-        "pushd" => Box::new(PushdCommand::new(args)),
         "quit" => Box::new(QuitCommand {}),
         "rehash" => Box::new(RehashCommand {}),
         "set" => Box::new(SetCommand::new(args)),
@@ -128,7 +123,7 @@ mod tests {
     fn check_builtins() {
         // The order is important!
         let cmds: Vec<String> = vec![
-            "cd", "dirs", "exit", "export", "hash", "h", "hist", "history", "popd", "pushd",
+            "cd", "pushd", "dirs", "exit", "export", "hash", "h", "hist", "history", "popd",
             "quit", "rehash", "set", "unset",
         ]
         .into_iter()
