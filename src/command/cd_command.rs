@@ -53,11 +53,17 @@ impl Command for CdCommand {
         };
 
         if let Some(oldpwd) = prompt.set_cwd(&path) {
-            prompt.context.borrow_mut().dir_stack.push(oldpwd);
-        }
+            let mut ctx = prompt.context.borrow_mut();
 
-        if self.program == "pushd" {
-            prompt.context.borrow_mut().print_short_dir_stack();
+            // Only add to stack if empty or not the same value as the head value.
+            let head = ctx.dir_stack.last();
+            if head.is_none() || head.unwrap() != &oldpwd {
+                ctx.dir_stack.push(oldpwd);
+            }
+
+            if self.program == "pushd" {
+                ctx.print_short_dir_stack();
+            }
         }
 
         Ok(true)
