@@ -183,6 +183,13 @@ impl Prompt {
         let mut program = expanded_values[0].clone();
         let mut args: Vec<String> = expanded_values.drain(1..).collect();
 
+        // Split arguments by preserving quoted segments.
+        let split_args = shlex::split(&args.join(" "));
+        if split_args.is_none() {
+            return Err(Box::new(UnmatchingQuotesCommandError));
+        }
+        args = split_args.unwrap();
+
         // If input is an existing folder, and auto_cd is enabled, then set "cd" as the
         // program.
         if self.context.borrow().config.auto_cd
@@ -337,6 +344,17 @@ impl Error for NoCommandError {}
 impl fmt::Display for NoCommandError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "")
+    }
+}
+
+#[derive(Debug)]
+struct UnmatchingQuotesCommandError;
+
+impl Error for UnmatchingQuotesCommandError {}
+
+impl fmt::Display for UnmatchingQuotesCommandError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Quotes do not match!")
     }
 }
 
@@ -511,6 +529,108 @@ mod tests {
         let ctx = prompt.context.borrow();
         assert!(ctx.env.contains_key("A"));
         assert_eq!(ctx.env.get("A"), Some(&"42".to_string()));
+    }
+
+    #[test]
+    fn parse_command_double_quoted_args() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo before \"hello 'there' world\" after");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+        assert_eq!(
+            general_cmd.args,
+            vec![
+                "before".to_string(),
+                "hello 'there' world".to_string(),
+                "after".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_command_double_quoted_args_with_end_symbol() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo \"hello \"x");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+        assert_eq!(general_cmd.args, vec!["hello x".to_string(),]);
+    }
+
+    #[test]
+    fn parse_command_double_quoted_args_with_start_symbol() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo x\"hello \"");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+        assert_eq!(general_cmd.args, vec!["xhello ".to_string(),]);
+    }
+
+    #[test]
+    fn parse_command_single_quoted_args() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo before 'hello \"there\" world' after");
+        assert!(cmd.is_ok());
+
+        let cmd = cmd.unwrap();
+        let general_cmd = cmd.as_any().downcast_ref::<GeneralCommand>().unwrap();
+        assert_eq!(general_cmd.program, "echo".to_string());
+        assert_eq!(
+            general_cmd.args,
+            vec![
+                "before".to_string(),
+                "hello \"there\" world".to_string(),
+                "after".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_command_unmatching_double_quoted_args() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo \"hello");
+        assert!(cmd.is_err());
+        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
+    }
+
+    #[test]
+    fn parse_command_unmatching_internal_double_quoted_args() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo 'before' \"hello 'after'");
+        assert!(cmd.is_err());
+        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
+    }
+
+    #[test]
+    fn parse_command_unmatching_single_quoted_args() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo 'hello");
+        assert!(cmd.is_err());
+        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
+    }
+
+    #[test]
+    fn parse_command_unmatching_internal_single_quoted_args() {
+        let mut prompt = Prompt::create(context::default());
+
+        let cmd = prompt.parse_command("echo \"before\" 'hello \"after\"");
+        assert!(cmd.is_err());
+        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
     }
 
     #[test]
