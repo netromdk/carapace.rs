@@ -61,22 +61,27 @@ impl ContextData {
             return;
         }
 
+        // Print in reverse order so that the head dir is first.
         let len = self.dir_stack.len();
-        for (num, dir) in self.dir_stack.iter().enumerate() {
+        for (num, dir) in self.dir_stack.iter().rev().enumerate() {
             if short {
-                if num == 0 && len == 1 {
-                    println!("{}", dir);
+                if num == 0 {
+                    if len == 1 {
+                        println!("{}", dir);
+                    } else {
+                        print!("[{}] ", dir);
+                    }
                 } else if num < len - 1 {
                     print!("{} ", dir);
                 } else {
-                    println!("[{}]", dir);
+                    println!("{}", dir);
                 }
 
             // Long formats.
-            } else if num < len - 1 {
-                println!("{} \t{}", num, dir);
-            } else {
+            } else if num == 0 {
                 println!("{}>\t{}", num, dir);
+            } else {
+                println!("{} \t{}", num, dir);
             }
         }
     }
