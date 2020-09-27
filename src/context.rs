@@ -80,6 +80,11 @@ impl ContextData {
             }
         }
     }
+
+    pub fn print_short_dir_stack(&self) {
+        let short = true;
+        self.print_dir_stack(short);
+    }
 }
 
 impl Default for ContextData {

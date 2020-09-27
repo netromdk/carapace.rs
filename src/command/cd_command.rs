@@ -57,8 +57,7 @@ impl Command for CdCommand {
         }
 
         if self.program == "pushd" {
-            let short = true;
-            prompt.context.borrow().print_dir_stack(short);
+            prompt.context.borrow_mut().print_short_dir_stack();
         }
 
         Ok(true)
