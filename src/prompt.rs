@@ -8,7 +8,7 @@ use std::env;
 use std::error::Error;
 use std::fmt;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use termcolor::{BufferWriter, Color, ColorChoice, ColorSpec, WriteColor};
 
@@ -329,6 +329,13 @@ impl Prompt {
             .to_str()
             .unwrap_or(fallback)
             .to_string();
+
+        // Don't change cwd if input is the same!
+        let canon_path = dir.canonicalize().unwrap_or_default();
+        if canon_path == PathBuf::from(&oldpwd) {
+            return None;
+        }
+
         if let Err(err) = env::set_current_dir(dir) {
             println!("Could not change to {}: {}", dir.display(), err);
             None
