@@ -186,7 +186,9 @@ impl Prompt {
         // Split arguments by preserving quoted segments.
         let split_args = shlex::split(&args.join(" "));
         if split_args.is_none() {
-            return Err(Box::new(UnmatchingQuotesCommandError));
+            // Docs: "An input string is erroneous if it ends while inside a quotation or right
+            // after an unescaped backslash."
+            return Err(Box::new(CommandArgsSplitError));
         }
         args = split_args.unwrap();
 
@@ -348,13 +350,17 @@ impl fmt::Display for NoCommandError {
 }
 
 #[derive(Debug)]
-struct UnmatchingQuotesCommandError;
+struct CommandArgsSplitError;
 
-impl Error for UnmatchingQuotesCommandError {}
+impl Error for CommandArgsSplitError {}
 
-impl fmt::Display for UnmatchingQuotesCommandError {
+impl fmt::Display for CommandArgsSplitError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Quotes do not match!")
+        write!(
+            f,
+            r#"Syntax error: failed to parse arguments
+Possible unmatching quote or unescaped sequence"#
+        )
     }
 }
 
@@ -603,7 +609,7 @@ mod tests {
 
         let cmd = prompt.parse_command("echo \"hello");
         assert!(cmd.is_err());
-        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
+        assert!(cmd.err().unwrap().is::<CommandArgsSplitError>());
     }
 
     #[test]
@@ -612,7 +618,7 @@ mod tests {
 
         let cmd = prompt.parse_command("echo 'before' \"hello 'after'");
         assert!(cmd.is_err());
-        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
+        assert!(cmd.err().unwrap().is::<CommandArgsSplitError>());
     }
 
     #[test]
@@ -621,7 +627,7 @@ mod tests {
 
         let cmd = prompt.parse_command("echo 'hello");
         assert!(cmd.is_err());
-        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
+        assert!(cmd.err().unwrap().is::<CommandArgsSplitError>());
     }
 
     #[test]
@@ -630,7 +636,7 @@ mod tests {
 
         let cmd = prompt.parse_command("echo \"before\" 'hello \"after\"");
         assert!(cmd.is_err());
-        assert!(cmd.err().unwrap().is::<UnmatchingQuotesCommandError>());
+        assert!(cmd.err().unwrap().is::<CommandArgsSplitError>());
     }
 
     #[test]
