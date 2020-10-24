@@ -5,7 +5,7 @@ authors = ["Morten Kristensen <me@mortens.dev>"]
 edition = "2018"
 
 [dependencies]
-dirs = "3.0.1"
+dirs-next = "2.0.0"
 termcolor = "1.1.0"
 rustyline = "6.3.0"
 json = "0.12.4"

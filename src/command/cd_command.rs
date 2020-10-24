@@ -47,7 +47,7 @@ impl Command for CdCommand {
         }
 
         let path = if self.path == "~" {
-            dirs::home_dir().unwrap_or_default()
+            dirs_next::home_dir().unwrap_or_default()
         } else {
             PathBuf::from(&self.path)
         };

@@ -152,7 +152,7 @@ impl Prompt {
         }
 
         // Replace all ~ with home dir (for parts starting with it only).
-        let home_dir = dirs::home_dir().unwrap_or_default();
+        let home_dir = dirs_next::home_dir().unwrap_or_default();
         values = values
             .into_iter()
             .map(|mut x| {
@@ -280,14 +280,20 @@ impl Prompt {
     }
 
     fn load_history(&mut self) {
-        let path = dirs::home_dir().unwrap().join(".carapace").join("history");
+        let path = dirs_next::home_dir()
+            .unwrap()
+            .join(".carapace")
+            .join("history");
         if self.editor.load_history(&path).is_err() {
             println!("No history loaded.");
         }
     }
 
     pub fn save_history(&self) {
-        let path = dirs::home_dir().unwrap().join(".carapace").join("history");
+        let path = dirs_next::home_dir()
+            .unwrap()
+            .join(".carapace")
+            .join("history");
         if let Err(err) = self.editor.save_history(&path) {
             println!("Could not save history to: {}\n{}", path.display(), err);
         }

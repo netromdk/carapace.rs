@@ -52,7 +52,7 @@ use std::io::{self, BufRead};
 /// any. Returns the exit code.
 pub fn repl(arg_matches: &ArgMatches) -> i32 {
     // Create init folder if not present.
-    let path = dirs::home_dir().unwrap().join(".carapace");
+    let path = dirs_next::home_dir().unwrap().join(".carapace");
     if let Err(err) = fs::create_dir_all(&path) {
         println!("Could not create init folder: {}\n{}", path.display(), err);
         return 1;

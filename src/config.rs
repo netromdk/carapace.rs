@@ -27,7 +27,7 @@ impl Config {
         let path = if let Some(path_) = path {
             PathBuf::from(path_)
         } else {
-            dirs::home_dir()
+            dirs_next::home_dir()
                 .unwrap()
                 .join(".carapace")
                 .join("config.json")
