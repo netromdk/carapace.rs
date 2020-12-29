@@ -289,7 +289,7 @@ impl Prompt {
         }
     }
 
-    pub fn save_history(&self) {
+    pub fn save_history(&mut self) {
         let path = dirs_next::home_dir()
             .unwrap()
             .join(".carapace")
