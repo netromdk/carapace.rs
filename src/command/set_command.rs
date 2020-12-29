@@ -86,7 +86,7 @@ EXAMPLES:
     }
 
     /// Set or unset options by adding or removing from `$-` in environment.
-    fn set(&mut self, opt: &str, enable: bool, prompt: &mut Prompt) -> Result<bool, i32> {
+    fn set(&mut self, opt: &str, enable: bool, prompt: &mut Prompt) -> bool {
         match opt {
             "x" | "e" | "v" => {
                 let mut ctx = prompt.context.borrow_mut();
@@ -109,10 +109,10 @@ EXAMPLES:
             }
             _ => {
                 println!("Unknown option: {}", opt);
-                return Ok(false);
+                return false;
             }
         }
-        Ok(true)
+        true
     }
 }
 
@@ -128,11 +128,11 @@ impl Command for SetCommand {
 
         // -x
         if m.is_present("xtrace") {
-            return self.set("x", true, prompt);
+            return Ok(self.set("x", true, prompt));
         }
         // -e
         else if m.is_present("errexit") {
-            return self.set("e", true, prompt);
+            return Ok(self.set("e", true, prompt));
         }
         // -v..
         else if m.is_present("verbose") {
@@ -166,7 +166,7 @@ impl Command for SetCommand {
                     return Ok(false);
                 }
             };
-            return self.set(opt, true, prompt);
+            return Ok(self.set(opt, true, prompt));
         }
         // +<name> or +o/+option <name>
         else if let Some(opt) = m.value_of("unset") {
@@ -193,7 +193,7 @@ impl Command for SetCommand {
                             return Ok(false);
                         }
                     };
-                    return self.set(opt, false, prompt);
+                    return Ok(self.set(opt, false, prompt));
                 } else {
                     println!("Option name required after {}!", opt);
                     return Ok(false);
@@ -208,7 +208,7 @@ impl Command for SetCommand {
                     return Ok(false);
                 }
                 let opt = opt.get(1..).unwrap();
-                return self.set(opt, false, prompt);
+                return Ok(self.set(opt, false, prompt));
             }
         }
 
