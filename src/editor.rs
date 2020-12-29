@@ -186,6 +186,8 @@ impl Completer for EditorHelper {
 }
 
 impl Hinter for EditorHelper {
+    type Hint = String;
+
     fn hint(&self, _line: &str, _pos: usize, _ctx: &rustyline::Context) -> Option<String> {
         None
     }
