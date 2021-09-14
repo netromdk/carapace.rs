@@ -18,6 +18,7 @@ type Value = String;
 type Map = HashMap<Key, Value>;
 
 /// Env encapsulates environment variables and their manipulation.
+#[derive(Default)]
 pub struct Env {
     env: Map,
 }
@@ -67,7 +68,7 @@ impl Env {
         if !self.env.contains_key(key) {
             self.env.insert(key.to_string(), "".to_string());
         }
-        let old_value = self.env[&key].clone();
+        let old_value = self.env[key].clone();
         if !old_value.contains(&value) {
             self.env.insert(key.to_string(), old_value + &value);
         }
@@ -100,7 +101,7 @@ impl Env {
         let mut res = data.to_string();
         for (k, v) in &self.env {
             // Bracketed version always replaces.
-            res = res.replace(&format!("${{{}}}", k), &v);
+            res = res.replace(&format!("${{{}}}", k), v);
 
             // Non-bracketed version can only replace when complete subset of string. For instance,
             // "$USER" must not replace in "$USERNAME" but "$USERNAME" can since it's the complete
@@ -160,14 +161,6 @@ impl Env {
             }
         }
         None
-    }
-}
-
-impl Default for Env {
-    fn default() -> Env {
-        Env {
-            env: HashMap::new(),
-        }
     }
 }
 

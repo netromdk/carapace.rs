@@ -15,6 +15,7 @@ pub fn default() -> Context {
     Rc::new(RefCell::new(ContextData::default()))
 }
 
+#[derive(Default)]
 pub struct ContextData {
     pub verbose: u64,
     pub config: Config,
@@ -89,20 +90,5 @@ impl ContextData {
     pub fn print_short_dir_stack(&self) {
         let short = true;
         self.print_dir_stack(short);
-    }
-}
-
-impl Default for ContextData {
-    fn default() -> ContextData {
-        ContextData {
-            verbose: 0,
-            config: Config::default(),
-            env: Env::default(),
-            commands: PathCommands::default(),
-            xtrace: false,
-            errexit: false,
-            ignoreeof: false,
-            dir_stack: Vec::new(),
-        }
     }
 }

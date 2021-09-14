@@ -4,7 +4,7 @@ use rustyline::{CompletionType, EditMode};
 
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, PartialEq)]
 pub struct Config {
@@ -48,7 +48,7 @@ impl Config {
         }
     }
 
-    pub fn save(&self, path: &PathBuf) {
+    pub fn save(&self, path: &Path) {
         let output = self.encode();
         if let Err(err) = fs::write(&path, output) {
             println!("Could not write config to: {}\n{}", path.display(), err);
@@ -77,7 +77,7 @@ impl Config {
 
     /// Decodes JSON `data` into config values.
     fn decode(&mut self, data: &str) -> bool {
-        match json::parse(&data) {
+        match json::parse(data) {
             Ok(input) => {
                 for (key, value) in input.entries() {
                     match key.to_lowercase().as_ref() {
@@ -179,7 +179,7 @@ mod tests {
         assert_eq!(config.max_history_size, 123);
         assert_eq!(config.edit_mode, EditMode::Emacs);
         assert_eq!(config.completion_type, CompletionType::List);
-        assert_eq!(config.auto_cd, true);
+        assert!(config.auto_cd);
         assert_eq!(config.aliases.len(), 2);
         assert!(config.aliases.contains_key("l"));
         assert_eq!(config.aliases.get("l"), Some(&String::from("ls")));

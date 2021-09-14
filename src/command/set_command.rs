@@ -482,7 +482,7 @@ mod tests {
         let mut cmd = SetCommand::new(vec!["+o".to_string(), "emacs".to_string()]);
         let res = cmd.execute(&mut prompt);
         assert!(res.is_ok());
-        assert_eq!(false, res.unwrap());
+        assert!(!res.unwrap());
     }
 
     #[test]
@@ -504,7 +504,7 @@ mod tests {
         let mut cmd = SetCommand::new(vec!["+o".to_string(), "vi".to_string()]);
         let res = cmd.execute(&mut prompt);
         assert!(res.is_ok());
-        assert_eq!(false, res.unwrap());
+        assert!(!res.unwrap());
     }
 
     #[test]

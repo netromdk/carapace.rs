@@ -9,6 +9,7 @@ use is_executable::IsExecutable;
 type Value = String;
 type Container = BTreeSet<Value>;
 
+#[derive(Default)]
 pub struct PathCommands {
     commands: Container,
 }
@@ -35,13 +36,11 @@ impl PathCommands {
 
                 // Find executable files at the top-level of the directory.
                 if let Ok(rd) = fs::read_dir(dir) {
-                    for entry in rd {
-                        if let Ok(entry) = entry {
-                            let path = entry.path();
-                            if path.is_file() && path.is_executable() {
-                                if let Some(file_name) = path.file_name().unwrap().to_str() {
-                                    self.insert(file_name.to_string());
-                                }
+                    for entry in rd.flatten() {
+                        let path = entry.path();
+                        if path.is_file() && path.is_executable() {
+                            if let Some(file_name) = path.file_name().unwrap().to_str() {
+                                self.insert(file_name.to_string());
                             }
                         }
                     }
@@ -72,14 +71,6 @@ impl PathCommands {
         Value: Borrow<S>,
     {
         self.commands.contains(value)
-    }
-}
-
-impl Default for PathCommands {
-    fn default() -> PathCommands {
-        PathCommands {
-            commands: Container::new(),
-        }
     }
 }
 

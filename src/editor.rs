@@ -48,14 +48,14 @@ impl EditorHelper {
 
         // Add aliases, if any.
         for alias in self.context.borrow().config.aliases.keys() {
-            if !cmds.contains(&alias) {
+            if !cmds.contains(alias) {
                 cmds.push(alias.clone());
             }
         }
 
         // Add detected commands from PATH, if any.
         for cmd in self.context.borrow().commands.as_ref() {
-            if !cmds.contains(&cmd) {
+            if !cmds.contains(cmd) {
                 cmds.push(cmd.clone());
             }
         }
