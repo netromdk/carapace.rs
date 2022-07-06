@@ -2,7 +2,7 @@
 name = "carapace"
 version = "0.2.0"
 authors = ["Morten Kristensen <me@mortens.dev>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 dirs-next = "2.0.0"
